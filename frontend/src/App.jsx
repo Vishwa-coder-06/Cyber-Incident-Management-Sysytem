@@ -1,14 +1,12 @@
-import Topbar from "./components/layout/Topbar";
-import { Toolbar } from "@mui/material";
+import DashboardLayout from "./layouts/DashboardLayout";
 
 function App() {
   return (
-    <>
-      <Topbar />
-      <Toolbar />
+    <DashboardLayout>
 
       <h1>Dashboard</h1>
-    </>
+
+    </DashboardLayout>
   );
 }
 

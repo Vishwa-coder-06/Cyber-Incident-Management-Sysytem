@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Box, Toolbar } from "@mui/material";
-
+import { Outlet } from "react-router-dom";
 import Topbar from "../components/layout/Topbar";
 import Sidebar from "../components/layout/Sidebar";
 
@@ -29,7 +29,7 @@ function DashboardLayout({ children }) {
       >
         <Toolbar />
 
-        {children}
+          <Outlet/>
 
       </Box>
 

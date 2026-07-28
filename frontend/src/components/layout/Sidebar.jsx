@@ -7,7 +7,7 @@ import {
   ListItemText,
   Divider,
 } from "@mui/material";
-
+import { useNavigate } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ReportProblemIcon from "@mui/icons-material/ReportProblem";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -19,6 +19,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 const drawerWidth = 260;
 
 function Sidebar({ open, onClose }) {
+  const navigate = useNavigate();
   return (
     <Drawer
       open={open}
@@ -31,23 +32,28 @@ function Sidebar({ open, onClose }) {
           bgcolor: "#1E1E1E",
           color: "white",
           top:"64px",
-          height:"card(100%-64px)",
+          height:"calc(100%-64px)",
         },
       }}
     >
-      <Toolbar />
 
       <List>
 
-        <ListItemButton>
-          <ListItemIcon>
+        <ListItemButton onClick={() => {navigate("/dashboard");
+        onClose();
+        }
+      }>
+          <ListItemIcon >
             <DashboardIcon sx={{ color: "white" }} />
           </ListItemIcon>
 
           <ListItemText primary="Dashboard" />
         </ListItemButton>
 
-        <ListItemButton>
+        <ListItemButton onClick={() => {navigate("/report-incident");
+        onClose();
+        }
+      }>
           <ListItemIcon>
             <ReportProblemIcon sx={{ color: "white" }} />
           </ListItemIcon>
@@ -55,7 +61,10 @@ function Sidebar({ open, onClose }) {
           <ListItemText primary="Report Incident" />
         </ListItemButton>
 
-        <ListItemButton>
+        <ListItemButton onClick={() => {navigate("/ai-analysis");
+        onClose();
+        }
+      }>
           <ListItemIcon>
             <SmartToyIcon sx={{ color: "white" }} />
           </ListItemIcon>
@@ -63,7 +72,10 @@ function Sidebar({ open, onClose }) {
           <ListItemText primary="AI Analysis" />
         </ListItemButton>
 
-        <ListItemButton>
+        <ListItemButton onClick={() => {navigate("/my-incidents");
+        onClose();
+        }
+      }>
           <ListItemIcon>
             <AssignmentIcon sx={{ color: "white" }} />
           </ListItemIcon>
@@ -73,7 +85,10 @@ function Sidebar({ open, onClose }) {
 
         <Divider sx={{ bgcolor: "#333" }} />
 
-        <ListItemButton>
+        <ListItemButton onClick={() => {navigate("/notifications");
+        onClose();
+        }
+      }>
           <ListItemIcon>
             <NotificationsIcon sx={{ color: "white" }} />
           </ListItemIcon>
@@ -81,7 +96,10 @@ function Sidebar({ open, onClose }) {
           <ListItemText primary="Notifications" />
         </ListItemButton>
 
-        <ListItemButton>
+        <ListItemButton onClick={() => {navigate("/profile");
+        onClose();
+        }
+      }>
           <ListItemIcon>
             <PersonIcon sx={{ color: "white" }} />
           </ListItemIcon>
@@ -91,7 +109,10 @@ function Sidebar({ open, onClose }) {
 
         <Divider sx={{ bgcolor: "#333" }} />
 
-        <ListItemButton>
+        <ListItemButton onClick={() => {navigate("/logout");
+        onClose();
+        }
+      }>
           <ListItemIcon>
             <LogoutIcon sx={{ color: "#EF5350" }} />
           </ListItemIcon>

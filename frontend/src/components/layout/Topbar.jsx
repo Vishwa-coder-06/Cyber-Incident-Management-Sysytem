@@ -11,22 +11,26 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SecurityIcon from "@mui/icons-material/Security";
-
+import { colors } from "../../theme/colors";
 function Topbar({
   onMenuClick,
   username = "Vishwa",
   role = "Reporter",
 }) {
   return (
-    <AppBar
+   <AppBar
       position="fixed"
-      elevation={2}
+      elevation={1}
       sx={{
-        zIndex: (theme) => theme.zIndex.drawer + 1,
-        bgcolor: "#1E1E1E",
-      }}
+        bgcolor: "#ffffff",
+        color: "#111827",
+       borderBottom: "1px solid #e5e7eb",
+     }}
     >
-      <Toolbar>
+      <Toolbar  sx={{
+    minHeight: 64,
+    height: 64,
+  }}>
 
         {/* Menu Button */}
         <IconButton

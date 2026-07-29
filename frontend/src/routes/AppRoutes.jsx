@@ -4,6 +4,10 @@ import DashboardLayout from "../layouts/DashboardLayout";
 
 import Landing from "../pages/public/Landing";
 import Login from "../pages/public/Login";
+import About from "../pages/public/About";
+import Contact from "../pages/public/Contact";
+
+
 import ForgotPassword from "../pages/public/ForgotPassword";
 
 import Dashboard from "../pages/reporter/Dashboard";
@@ -19,10 +23,11 @@ function AppRoutes() {
 
         {/* Public Routes */}
 
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-
+       <Route path="/" element={<Landing />} />
+       <Route path="/about" element={<About />} />
+       <Route path="/contact" element={<Contact />} />
+       <Route path="/login" element={<Login />} />
+       <Route path="/forgot-password" element={<ForgotPassword />} />
         {/* Reporter Routes */}
 <Route element={<DashboardLayout />}>
 

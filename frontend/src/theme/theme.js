@@ -13,6 +13,13 @@ const theme = createTheme({
       default: colors.background,
       paper: colors.surface,
     },
+
+    text: {
+      primary: colors.textPrimary,
+      secondary: colors.textSecondary,
+    },
+    
+    divider: colors.border,
   },
 });
 

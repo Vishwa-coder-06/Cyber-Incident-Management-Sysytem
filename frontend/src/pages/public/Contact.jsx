@@ -1,5 +1,13 @@
+import Navbar from "../../components/public/PublicNavbar";
+import ContactForm from "../../components/public/ContactForm";
+
 function Contact() {
-    return <h1>Contact</h1>;
+  return (
+    <>
+      <Navbar />
+      <ContactForm />
+    </>
+  );
 }
 
 export default Contact;

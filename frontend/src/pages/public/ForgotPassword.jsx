@@ -1,5 +1,11 @@
+import ForgotPasswordForm from "../../components/public/ForgotPasswordForm";
+
+
 function ForgetPassword() {
-    return <h1>ForgetPassword</h1>;
+    return(
+      
+        <ForgotPasswordForm />
+    );
 }
 
 export default ForgetPassword;

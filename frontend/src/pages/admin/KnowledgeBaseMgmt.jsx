@@ -1,7 +1,7 @@
 import { Box, Typography } from "@mui/material";
-import UserManagementContent from "../../components/admin/UserManagementContent";
+import KnowledgeBaseContent from "../../components/admin/KnowledgeBaseMgmtContent";
 
-function UserManagement() {
+function KnowledgeBaseMgmt() {
   return (
     <Box>
 
@@ -12,7 +12,7 @@ function UserManagement() {
           fontWeight: 700,
         }}
       >
-        User Management
+        Knowledge Management
       </Typography>
 
       <Typography
@@ -21,13 +21,13 @@ function UserManagement() {
           mb: 4,
         }}
       >
-        Manage all users and their roles
+        Oversee all KB articles across the system
       </Typography>
 
-      <UserManagementContent />
+      <KnowledgeBaseContent />
 
     </Box>
   );
 }
 
-export default UserManagement;
+export default KnowledgeBaseMgmt;

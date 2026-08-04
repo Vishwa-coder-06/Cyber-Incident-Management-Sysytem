@@ -1,4 +1,4 @@
-import AIAnalysisContent from "../../components/reporter/AIAnalysis/AIAnalysisContent";
+import AIAnalysisContent from "../../components/reporter/AIAnalysisContent";
 
 function AIAnalysis() {
   return <AIAnalysisContent />;

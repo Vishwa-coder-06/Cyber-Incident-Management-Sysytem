@@ -1,7 +1,7 @@
 import { Box, Typography } from "@mui/material";
-import UserManagementContent from "../../components/admin/UserManagementContent";
+import ManagerDashboardContent from "../../components/manager/ManagerDashboardContent";
 
-function UserManagement() {
+function ManagerDashboard() {
   return (
     <Box>
 
@@ -12,7 +12,7 @@ function UserManagement() {
           fontWeight: 700,
         }}
       >
-        User Management
+        Manager Dashboard
       </Typography>
 
       <Typography
@@ -21,13 +21,13 @@ function UserManagement() {
           mb: 4,
         }}
       >
-        Manage all users and their roles
+        Team performance and incident overview
       </Typography>
 
-      <UserManagementContent />
+      <ManagerDashboardContent />
 
     </Box>
   );
 }
 
-export default UserManagement;
+export default ManagerDashboard;

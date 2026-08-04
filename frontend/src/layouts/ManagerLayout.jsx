@@ -1,21 +1,24 @@
 import { useState } from "react";
 
 import { Box, Toolbar } from "@mui/material";
-import { Outlet } from "react-router-dom";
-import Topbar from "../components/layout/ReporterTopbar";
-import Sidebar from "../components/layout/ReporterSidebar";
 
-function ReporterLayout({ children }) {
+import { Outlet } from "react-router-dom";
+
+import ManagerTopbar from "../components/layout/ManagerTopbar";
+import ManagerSidebar from "../components/layout/ManagerSidebar";
+
+function ManagerLayout() {
+
   const [open, setOpen] = useState(false);
 
   return (
     <Box sx={{ display: "flex" }}>
 
-      <Topbar
+      <ManagerTopbar
         onMenuClick={() => setOpen(true)}
       />
 
-      <Sidebar
+      <ManagerSidebar
         open={open}
         onClose={() => setOpen(false)}
       />
@@ -29,7 +32,7 @@ function ReporterLayout({ children }) {
       >
         <Toolbar />
 
-          <Outlet/>
+        <Outlet />
 
       </Box>
 
@@ -37,4 +40,4 @@ function ReporterLayout({ children }) {
   );
 }
 
-export default ReporterLayout;
+export default ManagerLayout;

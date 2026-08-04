@@ -12,7 +12,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SecurityIcon from "@mui/icons-material/Security";
 import { colors } from "../../theme/colors";
-function Topbar({
+function ReporterTopbar({
   onMenuClick,
   username = "Vishwa",
   role = "Reporter",
@@ -22,7 +22,7 @@ function Topbar({
       position="fixed"
       elevation={1}
       sx={{
-        bgcolor: "#ffffff",
+        bgcolor: "#166b37",
         color: "#111827",
        borderBottom: "1px solid #e5e7eb",
      }}
@@ -34,9 +34,9 @@ function Topbar({
 
         {/* Menu Button */}
         <IconButton
-          color="inherit"
           edge="start"
           onClick={onMenuClick}
+          sx={{color:"#ffffff"}}
         >
           <MenuIcon />
         </IconButton>
@@ -44,7 +44,7 @@ function Topbar({
         {/* Logo */}
         <SecurityIcon
           sx={{
-            color: "#42A5F5",
+            color: "#ffffff",
             mx: 1,
           }}
         />
@@ -53,6 +53,7 @@ function Topbar({
           variant="h6"
           sx={{
             fontWeight: "bold",
+            color:"#ffffff"
           }}
         >
           SecureOps
@@ -97,4 +98,4 @@ function Topbar({
   );
 }
 
-export default Topbar;
+export default ReporterTopbar;

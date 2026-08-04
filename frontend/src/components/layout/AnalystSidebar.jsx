@@ -8,7 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AssignmentIcon from "@mui/icons-material/Assignment";
@@ -21,6 +21,23 @@ const drawerWidth = 260;
 
 function AnalystSidebar({ open, onClose }) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeStyle = (path) => ({
+    mx: 2,
+    mt: 1,
+    borderRadius: 2,
+
+    bgcolor:
+      location.pathname === path ? "#5B4CF5" : "transparent",
+
+    "&:hover": {
+      bgcolor:
+        location.pathname === path
+          ? "#6A5AF9"
+          : "rgba(71, 53, 160, 0.43)",
+    },
+  });
 
   return (
     <Drawer
@@ -56,18 +73,10 @@ function AnalystSidebar({ open, onClose }) {
         {/* Dashboard */}
 
         <ListItemButton
+          sx={activeStyle("/analyst/dashboard")}
           onClick={() => {
             navigate("/analyst/dashboard");
             onClose();
-          }}
-          sx={{
-            mx: 2,
-            borderRadius: 2,
-            bgcolor: "#5B4CF5",
-
-            "&:hover": {
-              bgcolor: "#6A5AF9",
-            },
           }}
         >
           <ListItemIcon>
@@ -80,11 +89,11 @@ function AnalystSidebar({ open, onClose }) {
         {/* Assigned Incidents */}
 
         <ListItemButton
+          sx={activeStyle("/analyst/assigned-incidents")}
           onClick={() => {
             navigate("/analyst/assigned-incidents");
             onClose();
           }}
-          sx={{ mx: 2, mt: 1 }}
         >
           <ListItemIcon>
             <AssignmentIcon sx={{ color: "#FFFFFF" }} />
@@ -96,11 +105,11 @@ function AnalystSidebar({ open, onClose }) {
         {/* Investigation */}
 
         <ListItemButton
+          sx={activeStyle("/analyst/investigation")}
           onClick={() => {
             navigate("/analyst/investigation");
             onClose();
           }}
-          sx={{ mx: 2 }}
         >
           <ListItemIcon>
             <SearchIcon sx={{ color: "#FFFFFF" }} />
@@ -112,11 +121,11 @@ function AnalystSidebar({ open, onClose }) {
         {/* Resolution */}
 
         <ListItemButton
+          sx={activeStyle("/analyst/resolution")}
           onClick={() => {
             navigate("/analyst/resolution");
             onClose();
           }}
-          sx={{ mx: 2 }}
         >
           <ListItemIcon>
             <TaskAltIcon sx={{ color: "#FFFFFF" }} />
@@ -128,11 +137,11 @@ function AnalystSidebar({ open, onClose }) {
         {/* Knowledge Base */}
 
         <ListItemButton
+          sx={activeStyle("/analyst/knowledge-base")}
           onClick={() => {
             navigate("/analyst/knowledge-base");
             onClose();
           }}
-          sx={{ mx: 2 }}
         >
           <ListItemIcon>
             <MenuBookIcon sx={{ color: "#FFFFFF" }} />
@@ -144,11 +153,11 @@ function AnalystSidebar({ open, onClose }) {
         {/* Article View */}
 
         <ListItemButton
+          sx={activeStyle("/analyst/article-view")}
           onClick={() => {
             navigate("/analyst/article-view");
             onClose();
           }}
-          sx={{ mx: 2 }}
         >
           <ListItemIcon>
             <DescriptionIcon sx={{ color: "#FFFFFF" }} />

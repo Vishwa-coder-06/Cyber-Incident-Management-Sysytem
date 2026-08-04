@@ -2,10 +2,10 @@ import { useState } from "react";
 
 import { Box, Toolbar } from "@mui/material";
 import { Outlet } from "react-router-dom";
-import Topbar from "../components/layout/ReporterTopbar";
-import Sidebar from "../components/layout/ReporterSidebar";
+import Topbar from "../components/layout/AdminTopbar";
+import Sidebar from "../components/layout/AdminSidebar";
 
-function ReporterLayout({ children }) {
+function AdminLayout({ children }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,4 +37,4 @@ function ReporterLayout({ children }) {
   );
 }
 
-export default ReporterLayout;
+export default AdminLayout;

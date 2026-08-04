@@ -1,5 +1,7 @@
+import AIAnalysisContent from "../../components/reporter/AIAnalysis/AIAnalysisContent";
+
 function AIAnalysis() {
-    return <h1>AIAnalysis</h1>;
+  return <AIAnalysisContent />;
 }
 
 export default AIAnalysis;

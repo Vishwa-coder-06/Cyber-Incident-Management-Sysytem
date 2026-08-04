@@ -5,7 +5,7 @@ import { Outlet } from "react-router-dom";
 import Topbar from "../components/layout/Topbar";
 import Sidebar from "../components/layout/Sidebar";
 
-function DashboardLayout({ children }) {
+function ReporterLayout({ children }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,4 +37,4 @@ function DashboardLayout({ children }) {
   );
 }
 
-export default DashboardLayout;
+export default ReporterLayout;

@@ -1,7 +1,7 @@
 import { Box, Typography } from "@mui/material";
-import IncidentDetailsContent from "../../components/reporter/IncidentDetailsContent";
+import NotificationsContent from "../../components/reporter/NotificationsContent";
 
-function IncidentDetails() {
+function Notifications() {
   return (
     <Box>
       <Typography
@@ -11,7 +11,7 @@ function IncidentDetails() {
           fontWeight: 700,
         }}
       >
-        Incident Details
+        Notifications
       </Typography>
 
       <Typography
@@ -20,12 +20,12 @@ function IncidentDetails() {
           mb: 4,
         }}
       >
-        #INC-041 · Suspicious login from unknown IP
+        Updates on your incidents and assignments
       </Typography>
 
-      <IncidentDetailsContent />
+      <NotificationsContent />
     </Box>
   );
 }
 
-export default IncidentDetails;
+export default Notifications;

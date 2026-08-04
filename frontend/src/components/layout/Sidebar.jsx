@@ -15,7 +15,7 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
-
+import DescriptionIcon from "@mui/icons-material/Description";
 const drawerWidth = 260;
 
 function Sidebar({ open, onClose }) {
@@ -39,7 +39,7 @@ function Sidebar({ open, onClose }) {
 
       <List>
 
-        <ListItemButton onClick={() => {navigate("/dashboard");
+        <ListItemButton onClick={() => {navigate("/reporter/dashboard");
         onClose();
         }
       }>
@@ -50,7 +50,7 @@ function Sidebar({ open, onClose }) {
           <ListItemText primary="Dashboard" />
         </ListItemButton>
 
-        <ListItemButton onClick={() => {navigate("/report-incident");
+        <ListItemButton onClick={() => {navigate("/reporter/report-incident");
         onClose();
         }
       }>
@@ -61,7 +61,7 @@ function Sidebar({ open, onClose }) {
           <ListItemText primary="Report Incident" />
         </ListItemButton>
 
-        <ListItemButton onClick={() => {navigate("/ai-analysis");
+        <ListItemButton onClick={() => {navigate("/reporter/ai-analysis");
         onClose();
         }
       }>
@@ -72,7 +72,7 @@ function Sidebar({ open, onClose }) {
           <ListItemText primary="AI Analysis" />
         </ListItemButton>
 
-        <ListItemButton onClick={() => {navigate("/my-incidents");
+        <ListItemButton onClick={() => {navigate("/reporter/my-incidents");
         onClose();
         }
       }>
@@ -85,7 +85,19 @@ function Sidebar({ open, onClose }) {
 
         <Divider sx={{ bgcolor: "#333" }} />
 
-        <ListItemButton onClick={() => {navigate("/notifications");
+        <ListItemButton onClick={() => { navigate("/reporter/incident-details"); 
+        onClose();
+        }
+      }>
+         <ListItemIcon>
+            <DescriptionIcon sx={{ color: "white" }} />
+         </ListItemIcon>
+
+         <ListItemText primary="Incident Details" />
+
+       </ListItemButton>
+
+        <ListItemButton onClick={() => {navigate("/reporter/notifications");
         onClose();
         }
       }>
@@ -96,7 +108,7 @@ function Sidebar({ open, onClose }) {
           <ListItemText primary="Notifications" />
         </ListItemButton>
 
-        <ListItemButton onClick={() => {navigate("/profile");
+        <ListItemButton onClick={() => {navigate("/reporter/profile");
         onClose();
         }
       }>
@@ -109,7 +121,7 @@ function Sidebar({ open, onClose }) {
 
         <Divider sx={{ bgcolor: "#333" }} />
 
-        <ListItemButton onClick={() => {navigate("/logout");
+        <ListItemButton onClick={() => {navigate("/reporter/logout");
         onClose();
         }
       }>

@@ -60,11 +60,6 @@ public class UserController {
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }
-    @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request){
 
-        return userService.login(request);
-
-    }
 
 }

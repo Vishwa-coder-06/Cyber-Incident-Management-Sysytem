@@ -92,5 +92,23 @@ public class IncidentService {
         incidentRepository.deleteById(id);
 
     }
+    
+    public Incident assignIncident(Long incidentId,
+            Long analystId){
+
+    		Incident incident =
+    				incidentRepository.findById(incidentId)
+    				.orElseThrow(() ->
+    				new RuntimeException("Incident Not Found"));
+    		
+    		incident.setAssignedTo(analystId);
+
+    		incident.setStatus("ASSIGNED");
+
+    		incident.setUpdatedAt(LocalDateTime.now());
+
+    		return incidentRepository.save(incident);
+
+     }
 
 }

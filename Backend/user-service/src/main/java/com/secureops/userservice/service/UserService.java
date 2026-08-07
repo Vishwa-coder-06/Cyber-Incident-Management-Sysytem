@@ -6,13 +6,11 @@ import java.util.List;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.secureops.common.dto.UserResponse;
 import com.secureops.userservice.dto.RegisterRequest;
 import com.secureops.userservice.dto.RegisterResponse;
 import com.secureops.userservice.entity.User;
 import com.secureops.userservice.repository.UserRepository;
-import com.secureops.userservice.dto.LoginRequest;
-import com.secureops.userservice.dto.LoginResponse;
-import com.secureops.userservice.config.SecurityConfig;
 
 @Service
 public class UserService {
@@ -96,6 +94,46 @@ public class UserService {
     public void deleteUser(Long id) {
 
         userRepository.deleteById(id);
+    }
+    
+    public UserResponse getUserByEmail(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElse(null);
+
+        if(user == null){
+            return null;
+        }
+
+        return new UserResponse(
+
+                user.getUserId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getRole()
+
+        );
+
+    }
+    public UserResponse getUserResponseById(Long id){
+
+        User user = userRepository.findById(id).orElse(null);
+
+        if(user == null){
+            return null;
+        }
+
+        return new UserResponse(
+
+                user.getUserId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getRole()
+
+        );
+
     }
 
 }

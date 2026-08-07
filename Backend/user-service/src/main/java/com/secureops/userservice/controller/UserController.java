@@ -8,6 +8,7 @@ import com.secureops.userservice.dto.RegisterRequest;
 import com.secureops.userservice.dto.RegisterResponse;
 import com.secureops.userservice.entity.User;
 import com.secureops.userservice.service.UserService;
+import com.secureops.common.dto.UserResponse;
 import com.secureops.userservice.dto.LoginRequest;
 import com.secureops.userservice.dto.LoginResponse;
 
@@ -59,6 +60,20 @@ public class UserController {
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
+    }
+    
+    @GetMapping("/email/{email}")
+    public UserResponse getUserByEmail(@PathVariable String email) {
+
+        return userService.getUserByEmail(email);
+
+    }
+    
+    @GetMapping("/{id}")
+    public UserResponse getUserResponseById(@PathVariable Long id){
+
+        return userService.getUserResponseById(id);
+
     }
 
 

@@ -42,6 +42,12 @@ public class Incident {
 
     @Column(name = "ASSIGNED_TO")
     private Long assignedTo;
+    
+    @Column(name = "ATTACHMENT_URL")
+    private String attachmentUrl;
+
+    @Column(name = "AI_STATUS")
+    private String aiStatus;
 
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;

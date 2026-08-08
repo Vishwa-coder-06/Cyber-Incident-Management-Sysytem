@@ -1,17 +1,19 @@
 package com.secureops.assignmentservice.service;
 
 import java.time.LocalDateTime;
-import com.secureops.common.dto.UserResponse;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.secureops.assignmentservice.client.IncidentClient;
+import com.secureops.assignmentservice.client.NotificationClient;
 import com.secureops.assignmentservice.client.UserClient;
 import com.secureops.assignmentservice.dto.AssignmentRequest;
 import com.secureops.assignmentservice.dto.AssignmentResponse;
 import com.secureops.assignmentservice.entity.Assignment;
 import com.secureops.assignmentservice.repository.AssignmentRepository;
+import com.secureops.common.dto.NotificationRequest;
+import com.secureops.common.dto.UserResponse;
 
 @Service
 public class AssignmentService {
@@ -19,13 +21,15 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final UserClient userClient;
     private final IncidentClient incidentClient;
+    private final NotificationClient notificationClient;
 
 
     public AssignmentService(AssignmentRepository assignmentRepository,UserClient userClient,
-    		IncidentClient incidentClient) {
+    		IncidentClient incidentClient, NotificationClient notificationClient) {
         this.assignmentRepository = assignmentRepository;
         this.userClient = userClient;
         this.incidentClient=incidentClient;
+        this.notificationClient = notificationClient;
 
     }
 
@@ -59,6 +63,20 @@ public class AssignmentService {
                 saved.getAnalystId()
 
         );
+        
+        NotificationRequest notification =
+                new NotificationRequest();
+
+        notification.setUserId(saved.getAnalystId());
+
+        notification.setTitle("New Incident Assigned");
+
+        notification.setMessage(
+                "Incident #" + saved.getIncidentId()
+                + " has been assigned to you."
+        );
+
+        notificationClient.createNotification(notification);
 
         return new AssignmentResponse(
                 saved.getAssignmentId(),
@@ -110,6 +128,43 @@ public class AssignmentService {
 
         assignmentRepository.deleteById(id);
 
+    }
+    
+ // Update Assignment Status
+ 
+    public Assignment updateAssignmentStatus(Long id, String status) {
+
+        Assignment assignment =
+                assignmentRepository.findById(id).orElse(null);
+
+        if (assignment == null) {
+            return null;
+        }
+
+        assignment.setStatus(status);
+
+        Assignment saved = assignmentRepository.save(assignment);
+
+        // 1. Update Incident Service
+        incidentClient.updateIncidentStatus(
+                saved.getIncidentId(),
+                status
+        );
+
+        // 2. Create Notification
+        NotificationRequest notification =
+                new NotificationRequest();
+
+        notification.setUserId(saved.getAnalystId());
+        notification.setTitle("Incident Status Updated");
+        notification.setMessage(
+                "Incident " + saved.getIncidentId()
+                + " status changed to " + status
+        );
+
+        notificationClient.createNotification(notification);
+
+        return saved;
     }
 
 }

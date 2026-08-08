@@ -69,12 +69,5 @@ public class UserController {
 
     }
     
-    @GetMapping("/{id}")
-    public UserResponse getUserResponseById(@PathVariable Long id){
-
-        return userService.getUserResponseById(id);
-
-    }
-
 
 }

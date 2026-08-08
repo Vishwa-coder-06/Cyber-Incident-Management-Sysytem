@@ -65,5 +65,12 @@ public class AssignmentController {
         assignmentService.deleteAssignment(id);
 
     }
+    
+    @PutMapping("/{id}/status")
+    public Assignment updateAssignmentStatus(@PathVariable Long id,
+    		@RequestParam String status) {
+    	
+    	return assignmentService.updateAssignmentStatus(id, status);
+    }
 
 }

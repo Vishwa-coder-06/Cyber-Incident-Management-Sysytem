@@ -65,5 +65,24 @@ public class IncidentController {
         incidentService.deleteIncident(id);
 
     }
+    
+    @PutMapping("/{incidentId}/assign/{analystId}")
+    public Incident assignIncident(
+            @PathVariable Long incidentId,
+            @PathVariable Long analystId){
+
+        return incidentService.assignIncident(
+                incidentId,
+                analystId);
+
+    }
+    
+    @PutMapping("/{id}/status")
+    public Incident updateIncidentStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+
+        return incidentService.updateIncidentStatus(id, status);
+    }
 
 }

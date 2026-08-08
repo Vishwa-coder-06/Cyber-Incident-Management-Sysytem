@@ -31,24 +31,50 @@ public class JwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String header = request.getHeader("Authorization");
+        
+        System.out.println("REQUEST: " + request.getMethod() + " " + request.getRequestURI());
+        System.out.println("AUTH HEADER: " + header);
+
+
 
         if (header != null && header.startsWith("Bearer ")) {
 
             String token = header.substring(7);
 
-            if (jwtUtil.isTokenValid(token)) {
+            try {
 
-                String email = jwtUtil.extractEmail(token);
-                String role = jwtUtil.extractRole(token);
+                if (jwtUtil.isTokenValid(token)) {
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                email,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                        );
+                    String email = jwtUtil.extractEmail(token);
+                    String role = jwtUtil.extractRole(token);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    System.out.println("JWT VALID");
+                    System.out.println("EMAIL: " + email);
+                    System.out.println("ROLE: " + role);
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    email,
+                                    null,
+                                    List.of(
+                                        new SimpleGrantedAuthority("ROLE_" + role)
+                                    )
+                            );
+
+                    SecurityContextHolder
+                            .getContext()
+                            .setAuthentication(authentication);
+
+                } else {
+
+                    System.out.println("JWT EXPIRED");
+
+                }
+
+            } catch (Exception e) {
+
+                System.out.println("JWT INVALID: " + e.getMessage());
+
             }
         }
 

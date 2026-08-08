@@ -110,5 +110,20 @@ public class IncidentService {
     		return incidentRepository.save(incident);
 
      }
+    
+    public Incident updateIncidentStatus(Long id, String status) {
+
+        Incident incident =
+                incidentRepository.findById(id).orElse(null);
+
+        if (incident == null) {
+            return null;
+        }
+
+        incident.setStatus(status);
+        incident.setUpdatedAt(LocalDateTime.now());
+
+        return incidentRepository.save(incident);
+    }
 
 }

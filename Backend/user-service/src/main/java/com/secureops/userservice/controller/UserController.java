@@ -2,15 +2,22 @@ package com.secureops.userservice.controller;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.secureops.common.dto.UserResponse;
 import com.secureops.userservice.dto.RegisterRequest;
 import com.secureops.userservice.dto.RegisterResponse;
+import com.secureops.userservice.dto.UserDashboardResponse;
 import com.secureops.userservice.entity.User;
 import com.secureops.userservice.service.UserService;
-import com.secureops.common.dto.UserResponse;
-import com.secureops.userservice.dto.LoginRequest;
-import com.secureops.userservice.dto.LoginResponse;
 
 @RestController
 @RequestMapping("/api/users")
@@ -69,5 +76,25 @@ public class UserController {
 
     }
     
+    @GetMapping("/dashboard")
+    public UserDashboardResponse getDashboardData() {
+
+        return userService.getDashboardData();
+    }
+    @GetMapping("/role/{role}")
+    public List<UserResponse> getUsersByRole(
+            @PathVariable String role) {
+
+        return userService.getUsersByRole(role)
+                .stream()
+                .map(user -> new UserResponse(
+                        user.getUserId(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        user.getRole()
+                ))
+                .toList();
+    }
 
 }

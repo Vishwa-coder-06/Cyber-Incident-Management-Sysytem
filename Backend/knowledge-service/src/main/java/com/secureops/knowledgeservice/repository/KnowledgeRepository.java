@@ -16,5 +16,8 @@ public interface KnowledgeRepository
     List<KnowledgeArticle> findByTagsContaining(String tag);
 
     List<KnowledgeArticle> findByTitleContainingIgnoreCase(String keyword);
+    
+    List<KnowledgeArticle> findTop5ByOrderByCreatedAtDesc();
+
 
 }

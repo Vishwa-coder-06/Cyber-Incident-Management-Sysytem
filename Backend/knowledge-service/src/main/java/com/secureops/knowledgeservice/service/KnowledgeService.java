@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.secureops.common.dto.KnowledgeSummary;
 import com.secureops.knowledgeservice.dto.KnowledgeRequest;
 import com.secureops.knowledgeservice.dto.KnowledgeResponse;
 import com.secureops.knowledgeservice.entity.KnowledgeArticle;
@@ -36,6 +37,7 @@ public class KnowledgeService {
         article.setTags(request.getTags());
         article.setCreatedBy(request.getCreatedBy());
         article.setCreatedAt(LocalDateTime.now());
+        article.setViews(0L);
 
         KnowledgeArticle saved = repository.save(article);
 
@@ -117,6 +119,22 @@ public class KnowledgeService {
 
         return repository.findByTitleContainingIgnoreCase(keyword);
 
+    }
+    
+    public List<KnowledgeSummary> getRecentArticles() {
+
+        return repository
+                .findTop5ByOrderByCreatedAtDesc()
+                .stream()
+                .map(article ->
+                        new KnowledgeSummary(
+                                article.getId(),
+                                article.getTitle(),
+                                article.getCreatedAt(),
+                                article.getViews()
+                        )
+                )
+                .toList();
     }
 
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.secureops.common.dto.UserResponse;
 import com.secureops.userservice.dto.RegisterRequest;
 import com.secureops.userservice.dto.RegisterResponse;
+import com.secureops.userservice.dto.UserDashboardResponse;
 import com.secureops.userservice.entity.User;
 import com.secureops.userservice.repository.UserRepository;
 
@@ -135,5 +136,34 @@ public class UserService {
         );
 
     }
+    
+    public UserDashboardResponse getDashboardData() {
 
+        long total = userRepository.count();
+
+        long active =
+                userRepository.countByStatus("ACTIVE");
+
+        long analysts =
+                userRepository.countByRole("ANALYST");
+
+        long managers =
+                userRepository.countByRole("MANAGER");
+
+        long admins =
+                userRepository.countByRole("ADMIN");
+
+        return new UserDashboardResponse(
+                total,
+                active,
+                analysts,
+                managers,
+                admins
+        );
+    }
+    
+    public List<User> getUsersByRole(String role) {
+
+        return userRepository.findByRoleIgnoreCase(role);
+    }
 }

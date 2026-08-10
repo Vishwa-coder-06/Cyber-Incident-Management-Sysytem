@@ -5,8 +5,11 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.secureops.incidentservice.dto.IncidentDashboardResponse;
 import com.secureops.incidentservice.dto.IncidentRequest;
 import com.secureops.incidentservice.dto.IncidentResponse;
+import com.secureops.incidentservice.dto.ReporterDashboardResponse;
+import com.secureops.incidentservice.dto.ReporterIncidentResponse;
 import com.secureops.incidentservice.entity.Incident;
 import com.secureops.incidentservice.repository.IncidentRepository;
 
@@ -124,6 +127,99 @@ public class IncidentService {
         incident.setUpdatedAt(LocalDateTime.now());
 
         return incidentRepository.save(incident);
+    }
+    
+    public IncidentDashboardResponse getDashboardData() {
+
+        long total = incidentRepository.count();
+
+        long open =
+                incidentRepository.countByStatusIgnoreCase("OPEN");
+
+        long inProgress =
+                incidentRepository.countByStatusIgnoreCase("IN_PROGRESS");
+
+        long resolved =
+                incidentRepository.countByStatusIgnoreCase("RESOLVED");
+
+        long critical =
+                incidentRepository.countBySeverity("CRITICAL");
+
+        return new IncidentDashboardResponse(
+                total,
+                open,
+                inProgress,
+                resolved,
+                critical
+        );
+    }
+    
+    public ReporterDashboardResponse getReporterDashboard(
+            Long reportedBy) {
+
+        long totalSubmitted =
+                incidentRepository.countByReportedBy(reportedBy);
+
+        long underReview =
+                incidentRepository.countByReportedByAndStatusIgnoreCase(
+                        reportedBy,
+                        "IN_PROGRESS");
+
+        long resolved =
+                incidentRepository.countByReportedByAndStatusIgnoreCase(
+                        reportedBy,
+                        "RESOLVED");
+
+        long criticalOpen =
+                incidentRepository
+                        .countByReportedByAndSeverityIgnoreCaseAndStatusIgnoreCase(
+                                reportedBy,
+                                "CRITICAL",
+                                "OPEN");
+
+        List<ReporterIncidentResponse> recentIncidents =
+                incidentRepository
+                        .findTop5ByReportedByOrderByCreatedAtDesc(
+                                reportedBy)
+                        .stream()
+                        .map(incident ->
+                                new ReporterIncidentResponse(
+                                        incident.getIncidentId(),
+                                        incident.getTitle(),
+                                        incident.getCategory(),
+                                        incident.getSeverity(),
+                                        incident.getStatus()
+                                ))
+                        .toList();
+
+        return new ReporterDashboardResponse(
+                totalSubmitted,
+                underReview,
+                resolved,
+                criticalOpen,
+                recentIncidents
+        );
+    }
+    public long getOpenIncidentCount() {
+
+        return incidentRepository
+                .countByStatusIgnoreCase("OPEN");
+    }
+    public long getResolvedToday() {
+
+        LocalDateTime startOfDay =
+                LocalDateTime.now()
+                        .toLocalDate()
+                        .atStartOfDay();
+
+        return incidentRepository
+                .countByStatusIgnoreCaseAndUpdatedAtAfter(
+                        "RESOLVED",
+                        startOfDay);
+    }
+    public List<Incident> getUnassignedIncidents() {
+
+        return incidentRepository.findByAssignedToIsNull();
     }
 
 }

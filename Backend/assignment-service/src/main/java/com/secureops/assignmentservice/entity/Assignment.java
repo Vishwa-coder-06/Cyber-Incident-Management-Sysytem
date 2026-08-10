@@ -35,5 +35,8 @@ public class Assignment {
 
     @Column(name = "ASSIGNED_AT")
     private LocalDateTime assignedAt;
+    
+    @Column(name = "RESOLVED_AT")
+    private LocalDateTime resolvedAt;
 
 }

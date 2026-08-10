@@ -1,15 +1,25 @@
 package com.secureops.gateway.dto;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class AdminDashboardResponse {
 
-    private Object users;
+    private long totalUsers;
 
-    private Object incidents;
+    private long activePlaybooks;
 
-    private Object assignments;
+    private long kbArticles;
+
+    private long auditEventsToday;
+
+    private Object incidentTrend;
+
+    private Object recentAuditEvents;
 }

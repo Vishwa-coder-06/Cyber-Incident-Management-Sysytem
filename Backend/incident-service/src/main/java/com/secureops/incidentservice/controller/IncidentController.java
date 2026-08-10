@@ -17,6 +17,7 @@ import com.secureops.common.dto.IncidentSummary;
 import com.secureops.incidentservice.dto.IncidentDashboardResponse;
 import com.secureops.incidentservice.dto.IncidentRequest;
 import com.secureops.incidentservice.dto.IncidentResponse;
+import com.secureops.incidentservice.dto.IncidentTrendResponse;
 import com.secureops.incidentservice.dto.ReporterDashboardResponse;
 import com.secureops.incidentservice.entity.Incident;
 import com.secureops.incidentservice.service.IncidentService;
@@ -145,6 +146,12 @@ public class IncidentController {
     public List<Incident> getUnassignedIncidents() {
 
         return incidentService.getUnassignedIncidents();
+    }
+    
+    @GetMapping("/dashboard/trend")
+    public List<IncidentTrendResponse> getIncidentTrend() {
+
+        return incidentService.getIncidentTrend();
     }
 
 }

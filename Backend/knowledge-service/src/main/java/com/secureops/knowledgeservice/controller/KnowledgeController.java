@@ -110,5 +110,10 @@ public class KnowledgeController {
 
     }
     
+    @GetMapping("/playbooks/active/count")
+    public long getActivePlaybookCount() {
+
+        return service.getActivePlaybookCount();
+    }
 
 }

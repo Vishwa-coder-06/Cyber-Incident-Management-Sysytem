@@ -10,14 +10,17 @@ import com.secureops.knowledgeservice.dto.KnowledgeRequest;
 import com.secureops.knowledgeservice.dto.KnowledgeResponse;
 import com.secureops.knowledgeservice.entity.KnowledgeArticle;
 import com.secureops.knowledgeservice.repository.KnowledgeRepository;
+import com.secureops.knowledgeservice.repository.PlaybookRepository;
 
 @Service
 public class KnowledgeService {
 
     private final KnowledgeRepository repository;
+    private final PlaybookRepository playbookRepository;
 
-    public KnowledgeService(KnowledgeRepository repository) {
+    public KnowledgeService(KnowledgeRepository repository,PlaybookRepository playbookRepository) {
         this.repository = repository;
+        this.playbookRepository=playbookRepository;
     }
 
     // Create Article
@@ -135,6 +138,12 @@ public class KnowledgeService {
                         )
                 )
                 .toList();
+    }
+    
+    public long getActivePlaybookCount() {
+
+        return playbookRepository
+                .countByStatusIgnoreCase("ACTIVE");
     }
 
 }

@@ -1,13 +1,18 @@
 package com.secureops.incidentservice.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.secureops.incidentservice.dto.IncidentDashboardResponse;
 import com.secureops.incidentservice.dto.IncidentRequest;
 import com.secureops.incidentservice.dto.IncidentResponse;
+import com.secureops.incidentservice.dto.IncidentTrendResponse;
 import com.secureops.incidentservice.dto.ReporterDashboardResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentResponse;
 import com.secureops.incidentservice.entity.Incident;
@@ -220,6 +225,58 @@ public class IncidentService {
     public List<Incident> getUnassignedIncidents() {
 
         return incidentRepository.findByAssignedToIsNull();
+    }
+    
+    public List<IncidentTrendResponse> getIncidentTrend() {
+
+        LocalDate today = LocalDate.now();
+
+        LocalDateTime start =
+                today.minusDays(6).atStartOfDay();
+
+        List<Incident> incidents =
+                incidentRepository.findIncidentsFromDate(start);
+
+        Map<String, Long> counts =
+                incidents.stream()
+                        .collect(Collectors.groupingBy(
+                                incident ->
+                                        incident.getCreatedAt()
+                                                .getDayOfWeek()
+                                                .toString(),
+                                Collectors.counting()
+                        ));
+
+        List<IncidentTrendResponse> result =
+                new ArrayList<>();
+
+        for (int i = 6; i >= 0; i--) {
+
+            LocalDate date =
+                    today.minusDays(i);
+
+            String day =
+                    date.getDayOfWeek()
+                            .toString()
+                            .substring(0, 3);
+
+            long count =
+                    incidents.stream()
+                            .filter(incident ->
+                                    incident.getCreatedAt()
+                                            .toLocalDate()
+                                            .equals(date))
+                            .count();
+
+            result.add(
+                    new IncidentTrendResponse(
+                            day,
+                            count
+                    )
+            );
+        }
+
+        return result;
     }
 
 }

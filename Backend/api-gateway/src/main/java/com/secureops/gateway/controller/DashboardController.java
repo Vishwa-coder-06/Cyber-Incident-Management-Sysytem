@@ -22,43 +22,82 @@ public class DashboardController {
 
     @GetMapping("/api/dashboard/admin")
     public Mono<AdminDashboardResponse> getAdminDashboard(
-            @RequestHeader(
-                    value = HttpHeaders.AUTHORIZATION,
-                    required = false
-            ) String token) {
-
-        if (token == null) {
-            throw new RuntimeException("Authorization token is required");
-        }
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
 
         Mono<Object> users =
                 webClient.get()
-                        .uri("http://localhost:8081/api/users/dashboard")
+                        .uri("http://localhost:8081/api/users")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .retrieve()
                         .bodyToMono(Object.class);
 
-        Mono<Object> incidents =
+        Mono<Object> knowledge =
                 webClient.get()
-                        .uri("http://localhost:8082/api/incidents/dashboard")
+                        .uri("http://localhost:8085/api/articles")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .retrieve()
                         .bodyToMono(Object.class);
 
-        Mono<Object> assignments =
+        Mono<Long> auditCount =
                 webClient.get()
-                        .uri("http://localhost:8083/api/assignments/dashboard")
+                        .uri("http://localhost:8087/api/audits/today/count")
+                        .header(HttpHeaders.AUTHORIZATION, token)
+                        .retrieve()
+                        .bodyToMono(Long.class);
+
+        Mono<Object> recentAudits =
+                webClient.get()
+                        .uri("http://localhost:8087/api/audits/recent")
+                        .header(HttpHeaders.AUTHORIZATION, token)
+                        .retrieve()
+                        .bodyToMono(Object.class);
+        
+        Mono<Long> activePlaybooks =
+                webClient.get()
+                        .uri("http://localhost:8085/api/articles/playbooks/active/count")
+                        .header(HttpHeaders.AUTHORIZATION, token)
+                        .retrieve()
+                        .bodyToMono(Long.class);
+
+        Mono<Object> incidentTrend =
+                webClient.get()
+                        .uri("http://localhost:8082/api/incidents/dashboard/trend")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .retrieve()
                         .bodyToMono(Object.class);
 
-        return Mono.zip(users, incidents, assignments)
-                .map(result ->
-                        new AdminDashboardResponse(
-                                result.getT1(),
-                                result.getT2(),
-                                result.getT3()
-                        ));
+        return Mono.zip(
+                users,
+                knowledge,
+                auditCount,
+                recentAudits,
+                activePlaybooks,
+                incidentTrend
+        ).map(result -> {
+
+            Object usersData = result.getT1();
+            Object knowledgeData = result.getT2();
+
+            long totalUsers = 0;
+            long kbArticles = 0;
+
+            if (usersData instanceof java.util.List<?> list) {
+                totalUsers = list.size();
+            }
+
+            if (knowledgeData instanceof java.util.List<?> list) {
+                kbArticles = list.size();
+            }
+
+            return new AdminDashboardResponse(
+            		totalUsers,
+                    result.getT5(),
+                    kbArticles,
+                    result.getT3(),
+                    result.getT6(),
+                    result.getT4()
+            );
+        });
     }
     
     @GetMapping("/api/dashboard/reporter/{userId}")

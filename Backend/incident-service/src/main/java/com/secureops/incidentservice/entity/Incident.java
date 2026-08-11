@@ -26,6 +26,7 @@ public class Incident {
     private String title;
 
     @Column(name = "DESCRIPTION")
+    @Lob
     private String description;
 
     @Column(name = "SEVERITY")
@@ -36,12 +37,18 @@ public class Incident {
 
     @Column(name = "CATEGORY")
     private String category;
+    
+    @Column(name = "AFFECTEDSYSTEM")
+    private String affectedSystem;
 
     @Column(name = "REPORTED_BY")
     private Long reportedBy;
 
     @Column(name = "ASSIGNED_TO")
     private Long assignedTo;
+    
+    @Column(name = "INCIDENTDATETIME")
+    private LocalDateTime incidentDateTime;
     
     @Column(name = "ATTACHMENT_URL")
     private String attachmentUrl;

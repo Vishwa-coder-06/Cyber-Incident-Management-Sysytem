@@ -14,11 +14,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.secureops.common.dto.IncidentSummary;
+import com.secureops.incidentservice.dto.IncidentAnalysisResponse;
 import com.secureops.incidentservice.dto.IncidentDashboardResponse;
 import com.secureops.incidentservice.dto.IncidentRequest;
 import com.secureops.incidentservice.dto.IncidentResponse;
 import com.secureops.incidentservice.dto.IncidentTrendResponse;
 import com.secureops.incidentservice.dto.ReporterDashboardResponse;
+import com.secureops.incidentservice.dto.ReporterIncidentDetailResponse;
+import com.secureops.incidentservice.dto.ReporterIncidentRequest;
 import com.secureops.incidentservice.entity.Incident;
 import com.secureops.incidentservice.service.IncidentService;
 
@@ -152,6 +155,61 @@ public class IncidentController {
     public List<IncidentTrendResponse> getIncidentTrend() {
 
         return incidentService.getIncidentTrend();
+    }
+    
+    @PostMapping("/reporter/draft")
+    public IncidentResponse saveDraft(
+            @RequestBody ReporterIncidentRequest request) {
+
+        return incidentService.saveDraft(request);
+    }
+    
+    @PostMapping("/reporter/submit")
+    public IncidentResponse submitIncident(
+            @RequestBody ReporterIncidentRequest request) {
+
+        return incidentService.submitIncident(request);
+    }
+    @PostMapping("/{id}/analyze")
+    public IncidentAnalysisResponse analyzeIncident(
+            @PathVariable Long id) {
+
+        return incidentService.analyzeIncident(id);
+    }
+    
+    @GetMapping("/{id}/analysis")
+    public IncidentAnalysisResponse getAnalysis(
+            @PathVariable Long id) {
+
+        return incidentService.getAnalysis(id);
+    }
+    
+    @PutMapping("/{id}/submit")
+    public Incident submitToManager(
+            @PathVariable Long id) {
+
+        return incidentService.submitToManager(id);
+    }
+    
+    @GetMapping("/reporter/my")
+    public List<Incident> getMyIncidents(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String severity) {
+
+        return incidentService.getReporterIncidents(
+                search,
+                status,
+                severity);
+    }
+    
+    @GetMapping("/{id}/reporter-details")
+    public ReporterIncidentDetailResponse
+    getReporterIncidentDetails(
+            @PathVariable Long id) {
+
+        return incidentService
+                .getReporterIncidentDetails(id);
     }
 
 }

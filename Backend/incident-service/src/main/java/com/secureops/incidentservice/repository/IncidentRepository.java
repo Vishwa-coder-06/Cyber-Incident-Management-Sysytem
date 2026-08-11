@@ -44,4 +44,20 @@ public interface IncidentRepository
     	""")
     	List<Incident> findIncidentsFromDate(
     	        @Param("startDate") LocalDateTime startDate);
+    
+    
+    @Query("""
+    		SELECT i FROM Incident i
+    		WHERE i.reportedBy = :reportedBy
+    		AND (:search IS NULL OR
+    		     LOWER(i.title) LIKE LOWER(CONCAT('%', :search, '%')))
+    		AND (:status IS NULL OR i.status = :status)
+    		AND (:severity IS NULL OR i.severity = :severity)
+    		ORDER BY i.createdAt DESC
+    		""")
+    		List<Incident> findReporterIncidents(
+    		        @Param("reportedBy") Long reportedBy,
+    		        @Param("search") String search,
+    		        @Param("status") String status,
+    		        @Param("severity") String severity);
 }

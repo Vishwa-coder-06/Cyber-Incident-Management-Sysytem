@@ -53,5 +53,7 @@ public class User {
 
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
+    
+    private String profilePhoto;
 
 }

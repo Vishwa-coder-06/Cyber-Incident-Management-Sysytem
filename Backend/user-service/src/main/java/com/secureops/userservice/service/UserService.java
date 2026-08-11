@@ -1,10 +1,16 @@
 package com.secureops.userservice.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.secureops.common.dto.UserResponse;
 import com.secureops.userservice.dto.RegisterRequest;
@@ -165,5 +171,131 @@ public class UserService {
     public List<User> getUsersByRole(String role) {
 
         return userRepository.findByRoleIgnoreCase(role);
+    }
+    
+    public String uploadProfilePhoto(
+            String email,
+            MultipartFile file)
+            throws IOException {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User Not Found"));
+
+        if (file.isEmpty()) {
+            throw new RuntimeException(
+                    "Please select an image");
+        }
+
+        String originalName =
+                file.getOriginalFilename();
+
+        String extension = "";
+
+        if (originalName != null &&
+                originalName.contains(".")) {
+
+            extension =
+                    originalName.substring(
+                            originalName.lastIndexOf("."));
+        }
+
+        String fileName =
+                user.getUserId() + extension;
+
+        Path uploadPath =
+                Paths.get("uploads/profiles");
+
+        Files.createDirectories(uploadPath);
+
+        Path filePath =
+                uploadPath.resolve(fileName);
+
+        Files.write(
+                filePath,
+                file.getBytes());
+
+        user.setProfilePhoto(fileName);
+
+        userRepository.save(user);
+
+        return fileName;
+    }
+    
+    public ResponseEntity<byte[]> getProfilePhoto(
+            String email)
+            throws IOException {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User Not Found"));
+
+        if (user.getProfilePhoto() == null) {
+
+            return ResponseEntity.notFound()
+                    .build();
+        }
+
+        Path path =
+                Paths.get("uploads/profiles")
+                        .resolve(user.getProfilePhoto());
+
+        if (!Files.exists(path)) {
+
+            return ResponseEntity.notFound()
+                    .build();
+        }
+
+        byte[] image =
+                Files.readAllBytes(path);
+
+        String contentType =
+                Files.probeContentType(path);
+
+        return ResponseEntity.ok()
+                .header(
+                        "Content-Type",
+                        contentType != null
+                                ? contentType
+                                : "image/jpeg")
+                .body(image);
+    }
+    
+    public User getMyProfile(String email) {
+
+        return userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User Not Found"));
+    }
+    
+    public User updateMyProfile(
+            String email,
+            User updatedUser) {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User Not Found"));
+
+        user.setFirstName(
+                updatedUser.getFirstName());
+
+        user.setLastName(
+                updatedUser.getLastName());
+
+        user.setDepartment(
+                updatedUser.getDepartment());
+
+        return userRepository.save(user);
     }
 }

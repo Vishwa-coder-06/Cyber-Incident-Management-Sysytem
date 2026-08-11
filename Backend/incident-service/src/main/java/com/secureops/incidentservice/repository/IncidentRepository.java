@@ -73,4 +73,29 @@ public interface IncidentRepository
     	        @Param("analystId") Long analystId,
     	        @Param("search") String search,
     	        @Param("severity") String severity);
+    
+    List<Incident> findByStatus(String status);
+
+    List<Incident> findBySeverity(String severity);
+
+    List<Incident> findByStatusAndSeverity(
+            String status,
+            String severity);
+    
+    long countByCreatedAtBetween(
+            LocalDateTime start,
+            LocalDateTime end);
+
+    long countBySeverityIgnoreCase(
+            String severity);
+    
+    @Query("""
+    	    SELECT i.affectedSystem, COUNT(i)
+    	    FROM Incident i
+    	    GROUP BY i.affectedSystem
+    	    ORDER BY COUNT(i) DESC
+    	""")
+    	List<Object[]> countByAffectedSystem();
+    	
+    	
 }

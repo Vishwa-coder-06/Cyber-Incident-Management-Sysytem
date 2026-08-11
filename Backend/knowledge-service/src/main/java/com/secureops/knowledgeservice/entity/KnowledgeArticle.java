@@ -43,5 +43,7 @@ public class KnowledgeArticle {
     private LocalDateTime createdAt;
     
     private Long views;
+    
+    private String status;
 
 }

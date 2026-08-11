@@ -1,13 +1,26 @@
 package com.secureops.gateway.controller;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.secureops.gateway.dto.AdminDashboardResponse;
+import com.secureops.gateway.dto.AnalystAssignmentResponse;
+import com.secureops.gateway.dto.IncidentSummary;
+import com.secureops.gateway.dto.ManagerAssignmentResponse;
+import com.secureops.gateway.dto.ManagerWorkloadResponse;
 
 import reactor.core.publisher.Mono;
 
@@ -18,6 +31,7 @@ public class DashboardController {
 
     public DashboardController(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
+     
     }
 
     @GetMapping("/api/dashboard/admin")
@@ -119,6 +133,446 @@ public class DashboardController {
         return webClient.get()
                 .uri("http://localhost:8083/api/assignments/manager/dashboard")
                 .header(HttpHeaders.AUTHORIZATION, token)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @GetMapping("/api/dashboard/manager/assign/{incidentId}")
+    public Mono<ManagerAssignmentResponse> getManagerAssignmentData(
+            @PathVariable Long incidentId,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+
+        // 1. Get incident details
+        Mono<IncidentSummary> incident =
+                webClient.get()
+                        .uri(
+                            "http://localhost:8082/api/incidents/{id}",
+                            incidentId
+                        )
+                        .header(
+                            HttpHeaders.AUTHORIZATION,
+                            token
+                        )
+                        .retrieve()
+                        .bodyToMono(IncidentSummary.class);
+
+
+        // 2. Get all analysts
+        Mono<List<Map<String, Object>>> analysts =
+                webClient.get()
+                        .uri(
+                            "http://localhost:8081/api/users/role/ANALYST"
+                        )
+                        .header(
+                            HttpHeaders.AUTHORIZATION,
+                            token
+                        )
+                        .retrieve()
+                        .bodyToMono(
+                            new ParameterizedTypeReference<
+                                    List<Map<String, Object>>>() {}
+                        );
+
+
+        // 3. Combine incident + analysts
+        return Mono.zip(incident, analysts)
+                .flatMap(result -> {
+
+                    IncidentSummary incidentData =
+                            result.getT1();
+
+                    List<Map<String, Object>> analystList =
+                            result.getT2();
+
+
+                    // 4. Get active incident count for every analyst
+                    List<Mono<AnalystAssignmentResponse>>
+                            analystRequests =
+                            analystList.stream()
+                                    .map(analyst -> {
+
+                                        Long analystId =
+                                                ((Number) analyst.get("userId"))
+                                                        .longValue();
+
+                                        String firstName =
+                                                String.valueOf(
+                                                        analyst.get("firstName"));
+
+                                        String lastName =
+                                                String.valueOf(
+                                                        analyst.get("lastName"));
+
+                                        String email =
+                                                String.valueOf(
+                                                        analyst.get("email"));
+
+
+                                        return webClient.get()
+                                                .uri(
+                                                    "http://localhost:8082/api/incidents/analyst/{analystId}/active-count",
+                                                    analystId
+                                                )
+                                                .header(
+                                                    HttpHeaders.AUTHORIZATION,
+                                                    token
+                                                )
+                                                .retrieve()
+                                                .bodyToMono(Long.class)
+                                                .map(count -> {
+
+                                                    String availability;
+
+                                                    if (count <= 3) {
+                                                        availability = "HIGH";
+                                                    }
+                                                    else if (count <= 6) {
+                                                        availability = "MEDIUM";
+                                                    }
+                                                    else {
+                                                        availability = "LOW";
+                                                    }
+
+
+                                                    return new AnalystAssignmentResponse(
+                                                            analystId,
+                                                            firstName
+                                                                    + " "
+                                                                    + lastName,
+                                                            email,
+                                                            count,
+                                                            availability
+                                                    );
+                                                });
+                                    })
+                                    .toList();
+
+
+                    // 5. Wait for all analyst workload requests
+                    return Mono.zip(
+                            analystRequests,
+                            results -> {
+
+                                List<AnalystAssignmentResponse>
+                                        analystResponses =
+                                        java.util.Arrays.stream(results)
+                                                .map(item ->
+                                                        (AnalystAssignmentResponse)
+                                                                item)
+                                                .toList();
+
+
+                                // 6. Find analyst with lowest workload
+                                AnalystAssignmentResponse
+                                        recommendedAnalyst =
+                                        analystResponses.stream()
+                                                .min(
+                                                    Comparator.comparingLong(
+                                                        AnalystAssignmentResponse
+                                                                ::getActiveIncidents
+                                                    )
+                                                )
+                                                .orElse(null);
+
+
+                                // 7. Return complete response
+                                return new ManagerAssignmentResponse(
+                                        incidentData,
+                                        analystResponses,
+                                        recommendedAnalyst
+                                );
+                            }
+                    );
+                });
+    }
+    
+    @GetMapping("/api/dashboard/manager/workload")
+    public Mono<ManagerWorkloadResponse> getManagerWorkload(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+
+        // Get all analysts
+        Mono<List<Map<String, Object>>> analysts =
+                webClient.get()
+                        .uri("http://localhost:8081/api/users/role/ANALYST")
+                        .header(HttpHeaders.AUTHORIZATION, token)
+                        .retrieve()
+                        .bodyToMono(
+                                new ParameterizedTypeReference<
+                                        List<Map<String, Object>>>() {}
+                        );
+
+
+        // Get workload for every analyst
+        return analysts.flatMap(analystList -> {
+
+            List<Mono<AnalystAssignmentResponse>> requests =
+                    analystList.stream()
+                            .map(analyst -> {
+
+                                Long analystId =
+                                        ((Number) analyst.get("userId"))
+                                                .longValue();
+
+                                String firstName =
+                                        String.valueOf(
+                                                analyst.get("firstName"));
+
+                                String lastName =
+                                        String.valueOf(
+                                                analyst.get("lastName"));
+
+                                String email =
+                                        String.valueOf(
+                                                analyst.get("email"));
+
+
+                                return webClient.get()
+                                        .uri(
+                                            "http://localhost:8082/api/incidents/analyst/{analystId}/active-count",
+                                            analystId
+                                        )
+                                        .header(
+                                            HttpHeaders.AUTHORIZATION,
+                                            token
+                                        )
+                                        .retrieve()
+                                        .bodyToMono(Long.class)
+                                        .map(count -> {
+
+                                            String availability;
+
+                                            if (count <= 3) {
+                                                availability = "LOW";
+                                            }
+                                            else if (count <= 6) {
+                                                availability = "MEDIUM";
+                                            }
+                                            else {
+                                                availability = "HIGH";
+                                            }
+
+
+                                            return new AnalystAssignmentResponse(
+                                                    analystId,
+                                                    firstName + " " + lastName,
+                                                    email,
+                                                    count,
+                                                    availability
+                                            );
+                                        });
+
+                            })
+                            .toList();
+
+
+            return Mono.zip(
+                    requests,
+                    results -> {
+
+                        List<AnalystAssignmentResponse>
+                                workload =
+                                java.util.Arrays.stream(results)
+                                        .map(result ->
+                                                (AnalystAssignmentResponse)
+                                                        result)
+                                        .toList();
+
+
+                        long totalAnalysts =
+                                workload.size();
+
+
+                        double averageWorkload =
+                                workload.stream()
+                                        .mapToLong(
+                                            AnalystAssignmentResponse
+                                                ::getActiveIncidents)
+                                        .average()
+                                        .orElse(0.0);
+
+
+                        return new ManagerWorkloadResponse(
+                                totalAnalysts,
+                                averageWorkload,
+                                workload
+                        );
+                    }
+            );
+        });
+    }
+    
+    @GetMapping("/api/admin/users")
+    public Mono<Object> getAdminUsers(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+
+        return webClient.get()
+                .uri("http://localhost:8081/api/users")
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @GetMapping("/api/admin/users/search")
+    public Mono<Object> searchAdminUsers(
+            @RequestParam String keyword,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+
+        return webClient.get()
+                .uri(uriBuilder ->
+                        uriBuilder
+                                .scheme("http")
+                                .host("localhost")
+                                .port(8081)
+                                .path("/api/users/search")
+                                .queryParam("keyword", keyword)
+                                .build())
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @PostMapping("/api/admin/users")
+    public Mono<Object> createAdminUser(
+            @RequestBody Object request,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+
+        return webClient.post()
+                .uri("http://localhost:8081/api/users")
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @PutMapping("/api/admin/users/{id}")
+    public Mono<Object> updateAdminUser(
+            @PathVariable Long id,
+            @RequestBody Object request,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+
+        return webClient.put()
+                .uri("http://localhost:8081/api/users/{id}", id)
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @GetMapping("/api/dashboard/admin/reports")
+    public Mono<Object> getAdminReports(
+            @RequestHeader(HttpHeaders.AUTHORIZATION)
+            String token) {
+
+        return webClient.get()
+                .uri(
+                    "http://localhost:8082/api/incidents/reports"
+                )
+                .header(
+                    HttpHeaders.AUTHORIZATION,
+                    token
+                )
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @GetMapping("/api/admin/audits")
+    public Mono<Object> getAdminAudits(
+            @RequestHeader(HttpHeaders.AUTHORIZATION)
+            String token) {
+
+        return webClient.get()
+                .uri("http://localhost:8087/api/audits")
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        token)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @GetMapping("/api/admin/audits/search")
+    public Mono<Object> searchAdminAudits(
+            @RequestParam String keyword,
+            @RequestHeader(HttpHeaders.AUTHORIZATION)
+            String token) {
+
+        return webClient.get()
+                .uri(uriBuilder ->
+                        uriBuilder
+                                .scheme("http")
+                                .host("localhost")
+                                .port(8087)
+                                .path("/api/audits/search")
+                                .queryParam(
+                                        "keyword",
+                                        keyword)
+                                .build())
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        token)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @GetMapping("/api/admin/audits/action/{action}")
+    public Mono<Object> getAuditsByAction(
+            @PathVariable String action,
+            @RequestHeader(HttpHeaders.AUTHORIZATION)
+            String token) {
+
+        return webClient.get()
+                .uri(
+                    "http://localhost:8087/api/audits/action/{action}",
+                    action)
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        token)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @GetMapping("/api/admin/audits/user/{userId}")
+    public Mono<Object> getAuditsByUser(
+            @PathVariable Long userId,
+            @RequestHeader(HttpHeaders.AUTHORIZATION)
+            String token) {
+
+        return webClient.get()
+                .uri(
+                    "http://localhost:8087/api/audits/user/{userId}",
+                    userId)
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        token)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @GetMapping("/api/admin/settings")
+    public Mono<Object> getAdminSettings(
+            @RequestHeader(HttpHeaders.AUTHORIZATION)
+            String token) {
+
+        return webClient.get()
+                .uri("http://localhost:<8081>/api/settings")
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        token)
+                .retrieve()
+                .bodyToMono(Object.class);
+    }
+    
+    @PutMapping("/api/admin/settings")
+    public Mono<Object> updateAdminSettings(
+            @RequestBody Object settings,
+            @RequestHeader(HttpHeaders.AUTHORIZATION)
+            String token) {
+
+        return webClient.put()
+                .uri("http://localhost:<8081>/api/settings")
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        token)
+                .bodyValue(settings)
                 .retrieve()
                 .bodyToMono(Object.class);
     }

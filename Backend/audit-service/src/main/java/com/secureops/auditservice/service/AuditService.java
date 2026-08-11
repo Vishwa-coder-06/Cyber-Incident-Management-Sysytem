@@ -64,4 +64,34 @@ public class AuditService {
                 )
                 .toList();
     }
+    
+ // =====================================================
+ // ADMIN AUDIT LOGS
+ // =====================================================
+
+ public List<AuditEvent> searchAudits(
+         String keyword) {
+
+     return auditRepository
+             .findByActionContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                     keyword,
+                     keyword);
+ }
+
+
+ public List<AuditEvent> getAuditsByAction(
+         String action) {
+
+     return auditRepository
+             .findByActionContainingIgnoreCase(
+                     action);
+ }
+
+
+ public List<AuditEvent> getAuditsByUser(
+         Long userId) {
+
+     return auditRepository
+             .findByUserId(userId);
+ }
 }

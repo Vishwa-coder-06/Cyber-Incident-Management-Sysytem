@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.secureops.common.dto.IncidentSummary;
+import com.secureops.incidentservice.dto.AdminReportResponse;
 import com.secureops.incidentservice.dto.AnalystInvestigationResponse;
 import com.secureops.incidentservice.dto.CloseIncidentRequest;
 import com.secureops.incidentservice.dto.IncidentAnalysisResponse;
@@ -282,6 +283,77 @@ public class IncidentController {
                 id,
                 request.getResolutionSummary()
         );
+    }
+    
+    @GetMapping("/manager/queue")
+    public List<Incident> getManagerIncidentQueue(
+
+            @RequestParam(required = false)
+            String search,
+
+            @RequestParam(required = false)
+            String status,
+
+            @RequestParam(required = false)
+            String severity) {
+
+        return incidentService
+                .getManagerIncidentQueue(
+                        search,
+                        status,
+                        severity);
+    }
+    
+    @GetMapping("/reports/incidents-this-month")
+    public long getIncidentsThisMonth() {
+
+        return incidentService
+                .getIncidentsThisMonth();
+    }
+
+
+    @GetMapping("/reports/severity/critical")
+    public long getCriticalCount() {
+
+        return incidentService
+                .getCriticalCount();
+    }
+
+
+    @GetMapping("/reports/severity/high")
+    public long getHighCount() {
+
+        return incidentService
+                .getHighCount();
+    }
+
+
+    @GetMapping("/reports/severity/medium")
+    public long getMediumCount() {
+
+        return incidentService
+                .getMediumCount();
+    }
+
+
+    @GetMapping("/reports/severity/low")
+    public long getLowCount() {
+
+        return incidentService
+                .getLowCount();
+    }
+    
+    @GetMapping("/reports/top-systems")
+    public List<Object[]> getTopAffectedSystems() {
+
+        return incidentService
+                .getTopAffectedSystems();
+    }
+    @GetMapping("/reports")
+    public AdminReportResponse getAdminReports() {
+
+        return incidentService
+                .getAdminReports();
     }
 
 }

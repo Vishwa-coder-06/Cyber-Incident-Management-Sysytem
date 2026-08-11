@@ -26,5 +26,7 @@ public class KnowledgeRequest {
     private List<String> tags;
 
     private String createdBy;
+    
+    private String status;
 
 }

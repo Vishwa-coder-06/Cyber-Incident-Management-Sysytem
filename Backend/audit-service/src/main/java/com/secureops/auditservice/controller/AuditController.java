@@ -36,4 +36,30 @@ public class AuditController {
 
         return auditService.getRecentAudits();
     }
+    
+    @GetMapping("/search")
+    public List<AuditEvent> searchAudits(
+            @RequestParam String keyword) {
+
+        return auditService
+                .searchAudits(keyword);
+    }
+
+
+    @GetMapping("/action/{action}")
+    public List<AuditEvent> getAuditsByAction(
+            @PathVariable String action) {
+
+        return auditService
+                .getAuditsByAction(action);
+    }
+
+
+    @GetMapping("/user/{userId}")
+    public List<AuditEvent> getAuditsByUser(
+            @PathVariable Long userId) {
+
+        return auditService
+                .getAuditsByUser(userId);
+    }
 }

@@ -33,6 +33,12 @@ public interface KnowledgeRepository
     	List<KnowledgeArticle> searchArticles(
     	        @Param("search") String search,
     	        @Param("category") String category);
+    
+    long countByStatusIgnoreCase(String status);
+
+    List<KnowledgeArticle> findByStatusIgnoreCase(String status);
+
+    long countByCategoryIgnoreCase(String category);
 
 
 }

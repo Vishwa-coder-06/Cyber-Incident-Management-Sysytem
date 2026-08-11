@@ -142,5 +142,22 @@ public class UserController {
         return userService.getProfilePhoto(
                 authentication.getName());
     }
+    
+    @GetMapping("/search")
+    public List<UserResponse> searchUsers(
+            @RequestParam String keyword) {
+
+        return userService
+                .searchUsers(keyword)
+                .stream()
+                .map(user -> new UserResponse(
+                        user.getUserId(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        user.getRole()
+                ))
+                .toList();
+    }
 
 }

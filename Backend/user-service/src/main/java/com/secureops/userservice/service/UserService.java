@@ -298,4 +298,13 @@ public class UserService {
 
         return userRepository.save(user);
     }
+    
+    public List<User> searchUsers(String keyword) {
+
+        return userRepository
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+                        keyword,
+                        keyword,
+                        keyword);
+    }
 }

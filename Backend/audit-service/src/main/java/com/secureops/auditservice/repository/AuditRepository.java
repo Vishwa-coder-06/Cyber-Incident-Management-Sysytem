@@ -13,4 +13,14 @@ public interface AuditRepository
     long countByCreatedAtAfter(LocalDateTime date);
 
     List<AuditEvent> findTop5ByOrderByCreatedAtDesc();
+    
+    List<AuditEvent> findByActionContainingIgnoreCase(
+            String action);
+
+    List<AuditEvent> findByUserId(
+            Long userId);
+
+    List<AuditEvent> findByActionContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+            String action,
+            String description);
 }

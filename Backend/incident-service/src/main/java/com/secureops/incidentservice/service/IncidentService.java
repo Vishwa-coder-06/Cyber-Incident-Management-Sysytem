@@ -1,8 +1,10 @@
 package com.secureops.incidentservice.service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import com.secureops.common.dto.IncidentSummary;
 import com.secureops.common.dto.UserResponse;
 import com.secureops.incidentservice.client.UserClient;
+import com.secureops.incidentservice.dto.AdminReportResponse;
 import com.secureops.incidentservice.dto.AnalystInvestigationResponse;
 import com.secureops.incidentservice.dto.IncidentAnalysisResponse;
 import com.secureops.incidentservice.dto.IncidentDashboardResponse;
@@ -25,6 +28,7 @@ import com.secureops.incidentservice.dto.ReporterDashboardResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentDetailResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentRequest;
 import com.secureops.incidentservice.dto.ReporterIncidentResponse;
+import com.secureops.incidentservice.dto.SystemReport;
 import com.secureops.incidentservice.entity.Incident;
 import com.secureops.incidentservice.entity.IncidentAnalysis;
 import com.secureops.incidentservice.entity.IncidentTimelineEvent;
@@ -850,5 +854,364 @@ public class IncidentService {
 
         return incidentRepository.save(incident);
     }
+    
+    public List<Incident> getManagerIncidentQueue(
+            String search,
+            String status,
+            String severity) {
+
+        List<Incident> incidents =
+                incidentRepository.findAll();
+
+        return incidents.stream()
+
+                .filter(incident -> {
+
+                    if (status != null &&
+                        !status.isBlank() &&
+                        !status.equalsIgnoreCase("ALL")) {
+
+                        return incident.getStatus()
+                                .equalsIgnoreCase(status);
+                    }
+
+                    return true;
+                })
+
+                .filter(incident -> {
+
+                    if (severity != null &&
+                        !severity.isBlank() &&
+                        !severity.equalsIgnoreCase("ALL")) {
+
+                        return incident.getSeverity()
+                                .equalsIgnoreCase(severity);
+                    }
+
+                    return true;
+                })
+
+                .filter(incident -> {
+
+                    if (search == null ||
+                        search.isBlank()) {
+
+                        return true;
+                    }
+
+                    String value =
+                            search.toLowerCase();
+
+                    return incident.getTitle()
+                            .toLowerCase()
+                            .contains(value);
+                })
+
+                .toList();
+    }
+    
+ // =====================================================
+ // ADMIN REPORTS
+ // =====================================================
+
+ public long getIncidentsThisMonth() {
+
+     LocalDateTime now =
+             LocalDateTime.now();
+
+     LocalDateTime start =
+             now.withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+     LocalDateTime end =
+             start.plusMonths(1);
+
+     return incidentRepository
+             .countByCreatedAtBetween(
+                     start,
+                     end);
+ }
+
+
+ public long getCriticalCount() {
+
+     return incidentRepository
+             .countBySeverityIgnoreCase(
+                     "CRITICAL");
+ }
+
+
+ public long getHighCount() {
+
+     return incidentRepository
+             .countBySeverityIgnoreCase(
+                     "HIGH");
+ }
+
+
+ public long getMediumCount() {
+
+     return incidentRepository
+             .countBySeverityIgnoreCase(
+                     "MEDIUM");
+ }
+
+
+ public long getLowCount() {
+
+     return incidentRepository
+             .countBySeverityIgnoreCase(
+                     "LOW");
+ }
+ 
+ public List<Object[]> getTopAffectedSystems() {
+
+	    return incidentRepository
+	            .countByAffectedSystem();
+	}
+ 
+ public AdminReportResponse getAdminReports() {
+
+	    LocalDateTime now =
+	            LocalDateTime.now();
+
+	    LocalDateTime start =
+	            now.withDayOfMonth(1)
+	               .withHour(0)
+	               .withMinute(0)
+	               .withSecond(0)
+	               .withNano(0);
+
+	    LocalDateTime end =
+	            start.plusMonths(1);
+
+
+	    // ==========================================
+	    // INCIDENTS THIS MONTH
+	    // ==========================================
+
+	    long incidentsThisMonth =
+	            incidentRepository
+	                    .countByCreatedAtBetween(
+	                            start,
+	                            end);
+
+
+	    // ==========================================
+	    // SEVERITY
+	    // ==========================================
+
+	    long critical =
+	            incidentRepository
+	                    .countBySeverityIgnoreCase(
+	                            "CRITICAL");
+
+	    long high =
+	            incidentRepository
+	                    .countBySeverityIgnoreCase(
+	                            "HIGH");
+
+	    long medium =
+	            incidentRepository
+	                    .countBySeverityIgnoreCase(
+	                            "MEDIUM");
+
+	    long low =
+	            incidentRepository
+	                    .countBySeverityIgnoreCase(
+	                            "LOW");
+
+
+	    // ==========================================
+	    // TOP AFFECTED SYSTEMS
+	    // ==========================================
+
+	    List<SystemReport> systems =
+	            incidentRepository
+	                    .countByAffectedSystem()
+	                    .stream()
+	                    .map(row ->
+	                            new SystemReport(
+	                                    String.valueOf(
+	                                            row[0]),
+	                                    ((Number) row[1])
+	                                            .longValue()
+	                            ))
+	                    .toList();
+
+
+	    // ==========================================
+	    // MTTD / MTTR
+	    // ==========================================
+
+	    List<IncidentTimelineEvent> events =
+	            incidentTimelineRepository
+	                    .findAll();
+
+
+	    Map<Long, LocalDateTime> submitted =
+	            new HashMap<>();
+
+	    Map<Long, LocalDateTime> assigned =
+	            new HashMap<>();
+
+	    Map<Long, LocalDateTime> resolved =
+	            new HashMap<>();
+
+
+	    for (IncidentTimelineEvent event :
+	            events) {
+
+	        if (event.getIncidentId() == null ||
+	                event.getEvent() == null) {
+	            continue;
+	        }
+
+	        String type =
+	                event.getEvent()
+	                        .toUpperCase();
+
+
+	        if (type.equals("SUBMITTED")) {
+
+	            submitted.putIfAbsent(
+	                    event.getIncidentId(),
+	                    event.getCreatedAt());
+	        }
+
+
+	        if (type.equals("ASSIGNED")) {
+
+	            assigned.putIfAbsent(
+	                    event.getIncidentId(),
+	                    event.getCreatedAt());
+	        }
+
+
+	        if (type.equals("RESOLVED")) {
+
+	            resolved.putIfAbsent(
+	                    event.getIncidentId(),
+	                    event.getCreatedAt());
+	        }
+	    }
+
+
+	    // ==========================================
+	    // CALCULATE MTTD
+	    // submitted -> assigned
+	    // ==========================================
+
+	    double totalMttd = 0;
+
+	    long mttdCount = 0;
+
+	    for (Long incidentId :
+	            submitted.keySet()) {
+
+	        LocalDateTime submittedTime =
+	                submitted.get(incidentId);
+
+	        LocalDateTime assignedTime =
+	                assigned.get(incidentId);
+
+	        if (assignedTime != null) {
+
+	            totalMttd +=
+	                    Duration.between(
+	                            submittedTime,
+	                            assignedTime)
+	                    .toMinutes()
+	                    / 60.0;
+
+	            mttdCount++;
+	        }
+	    }
+
+
+	    double mttdHours =
+	            mttdCount == 0
+	                    ? 0
+	                    : totalMttd / mttdCount;
+
+
+	    // ==========================================
+	    // CALCULATE MTTR
+	    // assigned -> resolved
+	    // ==========================================
+
+	    double totalMttr = 0;
+
+	    long mttrCount = 0;
+
+	    for (Long incidentId :
+	            assigned.keySet()) {
+
+	        LocalDateTime assignedTime =
+	                assigned.get(incidentId);
+
+	        LocalDateTime resolvedTime =
+	                resolved.get(incidentId);
+
+	        if (resolvedTime != null) {
+
+	            totalMttr +=
+	                    Duration.between(
+	                            assignedTime,
+	                            resolvedTime)
+	                    .toMinutes()
+	                    / 60.0;
+
+	            mttrCount++;
+	        }
+	    }
+
+
+	    double mttrHours =
+	            mttrCount == 0
+	                    ? 0
+	                    : totalMttr / mttrCount;
+
+
+	    // ==========================================
+	    // REPEAT INCIDENTS
+	    // ==========================================
+
+	    Map<String, Long> titleCounts =
+	            events.stream()
+	                    .filter(e ->
+	                            e.getIncidentId() != null)
+	                    .collect(
+	                        Collectors.groupingBy(
+	                            e -> String.valueOf(
+	                                    e.getIncidentId()),
+	                            Collectors.counting()
+	                        ));
+
+
+//	    long repeatIncidents =
+//	            titleCounts.values()
+//	                    .stream()
+//	                    .filter(count -> count > 1)
+//	                    .count();
+	    long repeatIncidents = 0;
+
+
+	    return new AdminReportResponse(
+	            Math.round(mttdHours * 100.0) / 100.0,
+	            Math.round(mttrHours * 100.0) / 100.0,
+	            incidentsThisMonth,
+	            repeatIncidents,
+	            critical,
+	            high,
+	            medium,
+	            low,
+	            systems
+	    );
+	}
+ 
 
 }

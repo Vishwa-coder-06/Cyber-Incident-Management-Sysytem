@@ -17,6 +17,7 @@ import com.secureops.common.dto.KnowledgeSummary;
 import com.secureops.knowledgeservice.dto.KnowledgeRequest;
 import com.secureops.knowledgeservice.dto.KnowledgeResponse;
 import com.secureops.knowledgeservice.entity.KnowledgeArticle;
+import com.secureops.knowledgeservice.entity.Playbook;
 import com.secureops.knowledgeservice.service.KnowledgeService;
 
 @RestController
@@ -116,15 +117,128 @@ public class KnowledgeController {
         return service.getActivePlaybookCount();
     }
     
-    @GetMapping("/articles")
+ 
+    
+    @GetMapping("/filter")
     public List<KnowledgeArticle> searchArticles(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category) {
 
         return service.searchArticles(
                 search,
-                category
-        );
+                category);
     }
+    
+ // =====================================================
+ // PLAYBOOK MANAGEMENT
+ // =====================================================
+
+
+ // CREATE PLAYBOOK
+ @PostMapping("/playbooks")
+ public Playbook createPlaybook(
+         @RequestBody Playbook playbook) {
+
+     return service.createPlaybook(playbook);
+ }
+
+
+ // GET ALL PLAYBOOKS
+ @GetMapping("/playbooks")
+ public List<Playbook> getAllPlaybooks() {
+
+     return service.getAllPlaybooks();
+ }
+
+
+ // GET PLAYBOOK BY ID
+ @GetMapping("/playbooks/{id}")
+ public Playbook getPlaybookById(
+         @PathVariable String id) {
+
+     return service.getPlaybookById(id);
+ }
+
+
+ // UPDATE PLAYBOOK
+ @PutMapping("/playbooks/{id}")
+ public Playbook updatePlaybook(
+         @PathVariable String id,
+         @RequestBody Playbook playbook) {
+
+     return service.updatePlaybook(
+             id,
+             playbook);
+ }
+
+
+ // DELETE PLAYBOOK
+ @DeleteMapping("/playbooks/{id}")
+ public void deletePlaybook(
+         @PathVariable String id) {
+
+     service.deletePlaybook(id);
+ }
+
+
+ // SEARCH PLAYBOOKS
+ @GetMapping("/playbooks/search")
+ public List<Playbook> searchPlaybooks(
+         @RequestParam String keyword) {
+
+     return service.searchPlaybooks(keyword);
+ }
+
+
+ // GET PLAYBOOKS BY CATEGORY
+ @GetMapping("/playbooks/category/{category}")
+ public List<Playbook> getPlaybooksByCategory(
+         @PathVariable String category) {
+
+     return service.getPlaybooksByCategory(
+             category);
+ }
+
+
+ // GET PLAYBOOKS BY STATUS
+ @GetMapping("/playbooks/status/{status}")
+ public List<Playbook> getPlaybooksByStatus(
+         @PathVariable String status) {
+
+     return service.getPlaybooksByStatus(
+             status);
+ }
+ 
+//=====================================================
+//KNOWLEDGE BASE MANAGEMENT
+//=====================================================
+
+@GetMapping("/stats/total")
+public long getTotalArticleCount() {
+
+  return service.getTotalArticleCount();
+}
+
+
+@GetMapping("/stats/published")
+public long getPublishedArticleCount() {
+
+  return service.getPublishedArticleCount();
+}
+
+
+@GetMapping("/stats/drafts")
+public long getDraftArticleCount() {
+
+  return service.getDraftArticleCount();
+}
+
+
+@GetMapping("/status/{status}")
+public List<KnowledgeArticle> getArticlesByStatus(
+      @PathVariable String status) {
+
+  return service.getArticlesByStatus(status);
+}
 
 }

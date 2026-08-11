@@ -115,5 +115,16 @@ public class KnowledgeController {
 
         return service.getActivePlaybookCount();
     }
+    
+    @GetMapping("/articles")
+    public List<KnowledgeArticle> searchArticles(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category) {
+
+        return service.searchArticles(
+                search,
+                category
+        );
+    }
 
 }

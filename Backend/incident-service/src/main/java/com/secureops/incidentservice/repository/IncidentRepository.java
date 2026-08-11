@@ -60,4 +60,17 @@ public interface IncidentRepository
     		        @Param("search") String search,
     		        @Param("status") String status,
     		        @Param("severity") String severity);
+    
+    @Query("""
+    	    SELECT i
+    	    FROM Incident i
+    	    WHERE i.assignedTo = :analystId
+    	      AND (:search IS NULL OR
+    	           LOWER(i.title) LIKE LOWER(CONCAT('%', :search, '%')))
+    	      AND (:severity IS NULL OR i.severity = :severity)
+    	""")
+    	List<Incident> findAnalystIncidents(
+    	        @Param("analystId") Long analystId,
+    	        @Param("search") String search,
+    	        @Param("severity") String severity);
 }

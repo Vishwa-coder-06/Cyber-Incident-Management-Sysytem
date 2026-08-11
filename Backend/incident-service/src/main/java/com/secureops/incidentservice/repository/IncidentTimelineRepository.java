@@ -9,7 +9,6 @@ import com.secureops.incidentservice.entity.IncidentTimelineEvent;
 public interface IncidentTimelineRepository
         extends JpaRepository<IncidentTimelineEvent, Long> {
 
-    List<IncidentTimelineEvent>
-    findByIncidentIdOrderByCreatedAtAsc(
+    List<IncidentTimelineEvent> findByIncidentIdOrderByCreatedAtAsc(
             Long incidentId);
 }

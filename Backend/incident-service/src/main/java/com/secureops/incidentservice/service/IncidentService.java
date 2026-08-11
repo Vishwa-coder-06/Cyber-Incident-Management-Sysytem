@@ -11,8 +11,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.secureops.common.dto.IncidentSummary;
 import com.secureops.common.dto.UserResponse;
 import com.secureops.incidentservice.client.UserClient;
+import com.secureops.incidentservice.dto.AnalystInvestigationResponse;
 import com.secureops.incidentservice.dto.IncidentAnalysisResponse;
 import com.secureops.incidentservice.dto.IncidentDashboardResponse;
 import com.secureops.incidentservice.dto.IncidentRequest;
@@ -25,6 +27,7 @@ import com.secureops.incidentservice.dto.ReporterIncidentRequest;
 import com.secureops.incidentservice.dto.ReporterIncidentResponse;
 import com.secureops.incidentservice.entity.Incident;
 import com.secureops.incidentservice.entity.IncidentAnalysis;
+import com.secureops.incidentservice.entity.IncidentTimelineEvent;
 import com.secureops.incidentservice.repository.IncidentAnalysisRepository;
 import com.secureops.incidentservice.repository.IncidentRepository;
 import com.secureops.incidentservice.repository.IncidentTimelineRepository;
@@ -36,13 +39,16 @@ public class IncidentService {
     private final UserClient userClient;
     private final IncidentAnalysisRepository incidentAnalysisRepository;
     private final IncidentTimelineRepository incidentTimelineRepository;
+    private final IncidentTimelineRepository incidentTimelineEventRepository;
 
     public IncidentService(IncidentRepository incidentRepository, UserClient userClient,
-    		IncidentAnalysisRepository incidentAnalysisRepository,IncidentTimelineRepository incidentTimelineRepository) {
+    		IncidentAnalysisRepository incidentAnalysisRepository,IncidentTimelineRepository incidentTimelineRepository,
+    		IncidentTimelineRepository incidentTimelineEventRepository) {
         this.incidentRepository = incidentRepository;
         this.userClient = userClient;
         this.incidentAnalysisRepository = incidentAnalysisRepository;
         this.incidentTimelineRepository = incidentTimelineRepository;
+        this.incidentTimelineEventRepository = incidentTimelineEventRepository;
 
     }
 
@@ -652,6 +658,197 @@ public class IncidentService {
                 analysisResponse,
                 timeline
         );
+    }
+    
+    public List<Incident> getAnalystIncidents(
+            String email,
+            String search,
+            String severity) {
+
+        UserResponse user =
+                userClient.getUserByEmail(email);
+
+        return incidentRepository.findAnalystIncidents(
+                user.getUserId(),
+                search,
+                severity
+        );
+    }
+    
+    public IncidentTimelineEvent addInvestigationNote(
+            Long incidentId,
+            String email,
+            String note) {
+
+        UserResponse user =
+                userClient.getUserByEmail(email);
+
+        Incident incident =
+                incidentRepository.findById(incidentId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Incident Not Found"));
+
+        IncidentTimelineEvent event =
+                new IncidentTimelineEvent();
+
+        event.setIncidentId(
+                incident.getIncidentId());
+
+        event.setEvent("INVESTIGATION_NOTE");
+
+        event.setDescription(
+                user.getFirstName()
+                + " added investigation note: "
+                + note);
+
+        event.setCreatedAt(
+                LocalDateTime.now());
+
+        return incidentTimelineEventRepository.save(event);
+    }
+    
+    public Incident performInvestigationAction(
+            Long incidentId,
+            String action) {
+
+        Incident incident =
+                incidentRepository.findById(incidentId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Incident Not Found"));
+
+        IncidentTimelineEvent event =
+                new IncidentTimelineEvent();
+
+        event.setIncidentId(incidentId);
+
+        event.setEvent(action.toUpperCase());
+
+        event.setDescription(
+                "Analyst performed action: "
+                + action);
+
+        event.setCreatedAt(
+                LocalDateTime.now());
+
+        incidentTimelineEventRepository.save(event);
+
+        if ("RESOLVE".equalsIgnoreCase(action)) {
+
+            incident.setStatus("RESOLVED");
+            incident.setUpdatedAt(
+                    LocalDateTime.now());
+
+            return incidentRepository.save(incident);
+        }
+
+        if ("ESCALATE".equalsIgnoreCase(action)) {
+
+            incident.setStatus("ESCALATED");
+            incident.setUpdatedAt(
+                    LocalDateTime.now());
+
+            return incidentRepository.save(incident);
+        }
+
+        if ("REQUEST_INFO".equalsIgnoreCase(action)) {
+
+            incident.setStatus("INFO_REQUESTED");
+            incident.setUpdatedAt(
+                    LocalDateTime.now());
+
+            return incidentRepository.save(incident);
+        }
+
+        return incident;
+    }
+    
+    public AnalystInvestigationResponse
+    getInvestigation(Long incidentId) {
+
+        Incident incident =
+                incidentRepository.findById(incidentId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Incident Not Found"));
+
+        IncidentAnalysis analysis =
+                incidentAnalysisRepository
+                        .findByIncidentId(incidentId)
+                        .orElse(null);
+
+        List<IncidentTimelineEvent> timeline =
+                incidentTimelineEventRepository
+                        .findByIncidentIdOrderByCreatedAtAsc(
+                                incidentId);
+
+        IncidentSummary summary =
+                new IncidentSummary(
+                        incident.getIncidentId(),
+                        incident.getTitle(),
+                        incident.getCategory(),
+                        incident.getSeverity(),
+                        incident.getStatus()
+                );
+
+        return new AnalystInvestigationResponse(
+                summary,
+                analysis,
+                timeline
+        );
+    }
+    
+    public IncidentTimelineEvent addResolutionStep(
+            Long incidentId,
+            String step) {
+
+        IncidentTimelineEvent event =
+                new IncidentTimelineEvent();
+
+        event.setIncidentId(incidentId);
+
+        event.setEvent("RESOLUTION_STEP");
+
+        event.setDescription(step);
+
+        event.setCreatedAt(
+                LocalDateTime.now());
+
+        return incidentTimelineEventRepository.save(event);
+    }
+    
+    public Incident closeIncident(
+            Long incidentId,
+            String resolutionSummary) {
+
+        Incident incident =
+                incidentRepository.findById(incidentId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Incident Not Found"));
+
+        incident.setStatus("RESOLVED");
+
+        incident.setUpdatedAt(
+                LocalDateTime.now());
+
+        IncidentTimelineEvent event =
+                new IncidentTimelineEvent();
+
+        event.setIncidentId(incidentId);
+
+        event.setEvent("RESOLUTION_COMPLETED");
+
+        event.setDescription(
+                resolutionSummary);
+
+        event.setCreatedAt(
+                LocalDateTime.now());
+
+        incidentTimelineEventRepository.save(event);
+
+        return incidentRepository.save(incident);
     }
 
 }

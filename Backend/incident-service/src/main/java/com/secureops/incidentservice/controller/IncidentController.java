@@ -2,6 +2,7 @@ package com.secureops.incidentservice.controller;
 
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,15 +15,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.secureops.common.dto.IncidentSummary;
+import com.secureops.incidentservice.dto.AnalystInvestigationResponse;
+import com.secureops.incidentservice.dto.CloseIncidentRequest;
 import com.secureops.incidentservice.dto.IncidentAnalysisResponse;
 import com.secureops.incidentservice.dto.IncidentDashboardResponse;
+import com.secureops.incidentservice.dto.IncidentInvestigationNoteRequest;
 import com.secureops.incidentservice.dto.IncidentRequest;
 import com.secureops.incidentservice.dto.IncidentResponse;
 import com.secureops.incidentservice.dto.IncidentTrendResponse;
 import com.secureops.incidentservice.dto.ReporterDashboardResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentDetailResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentRequest;
+import com.secureops.incidentservice.dto.ResolutionStepRequest;
 import com.secureops.incidentservice.entity.Incident;
+import com.secureops.incidentservice.entity.IncidentTimelineEvent;
 import com.secureops.incidentservice.service.IncidentService;
 
 @RestController
@@ -210,6 +216,72 @@ public class IncidentController {
 
         return incidentService
                 .getReporterIncidentDetails(id);
+    }
+    
+    @GetMapping("/analyst/my")
+    public List<Incident> getMyAssignedIncidents(
+            Authentication authentication,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String severity) {
+
+        return incidentService.getAnalystIncidents(
+                authentication.getName(),
+                search,
+                severity
+        );
+    }
+    
+    @PostMapping("/{id}/investigation/note")
+    public IncidentTimelineEvent addInvestigationNote(
+            @PathVariable Long id,
+            @RequestBody IncidentInvestigationNoteRequest request,
+            Authentication authentication) {
+
+        return incidentService.addInvestigationNote(
+                id,
+                authentication.getName(),
+                request.getNote()
+        );
+    }
+    
+    @PostMapping("/{id}/investigation/action")
+    public Incident performInvestigationAction(
+            @PathVariable Long id,
+            @RequestParam String action) {
+
+        return incidentService.performInvestigationAction(
+                id,
+                action
+        );
+    }
+    
+    @GetMapping("/{id}/investigation")
+    public AnalystInvestigationResponse getInvestigation(
+            @PathVariable Long id) {
+
+        return incidentService.getInvestigation(id);
+    }
+    
+    @PostMapping("/{id}/resolution/step")
+    public IncidentTimelineEvent addResolutionStep(
+            @PathVariable Long id,
+            @RequestBody ResolutionStepRequest request) {
+
+        return incidentService.addResolutionStep(
+                id,
+                request.getStep()
+        );
+    }
+    
+    @PostMapping("/{id}/resolution/close")
+    public Incident closeIncident(
+            @PathVariable Long id,
+            @RequestBody CloseIncidentRequest request) {
+
+        return incidentService.closeIncident(
+                id,
+                request.getResolutionSummary()
+        );
     }
 
 }

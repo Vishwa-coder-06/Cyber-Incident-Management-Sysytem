@@ -69,11 +69,10 @@ public class KnowledgeService {
                                           KnowledgeArticle updatedArticle) {
 
         KnowledgeArticle article =
-                repository.findById(id).orElse(null);
-
-        if(article == null){
-            return null;
-        }
+                repository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Article Not Found"));
 
         article.setTitle(updatedArticle.getTitle());
         article.setCategory(updatedArticle.getCategory());
@@ -144,6 +143,16 @@ public class KnowledgeService {
 
         return playbookRepository
                 .countByStatusIgnoreCase("ACTIVE");
+    }
+    
+    public List<KnowledgeArticle> searchArticles(
+            String search,
+            String category) {
+
+        return repository.searchArticles(
+                search,
+                category
+        );
     }
 
 }

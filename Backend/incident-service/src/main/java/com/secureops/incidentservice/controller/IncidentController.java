@@ -355,5 +355,12 @@ public class IncidentController {
         return incidentService
                 .getAdminReports();
     }
+    
+    @GetMapping("/analyst/{analystId}/active-count")
+    public long getActiveIncidentCount(
+            @PathVariable Long analystId) {
+
+        return incidentService.getActiveIncidentCount(analystId);
+    }
 
 }

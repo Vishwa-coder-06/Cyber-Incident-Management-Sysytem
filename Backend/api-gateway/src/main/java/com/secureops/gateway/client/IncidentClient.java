@@ -1,5 +1,6 @@
 package com.secureops.gateway.client;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -26,13 +27,19 @@ public class IncidentClient {
                 .block();
     }
 
-    public Long getActiveIncidentCount(Long analystId) {
+    public Long getActiveIncidentCount(
+            Long analystId,
+            String token) {
 
         return webClient
                 .get()
                 .uri(
                     "/api/incidents/analyst/{analystId}/active-count",
                     analystId
+                )
+                .header(
+                    HttpHeaders.AUTHORIZATION,
+                    token
                 )
                 .retrieve()
                 .bodyToMono(Long.class)

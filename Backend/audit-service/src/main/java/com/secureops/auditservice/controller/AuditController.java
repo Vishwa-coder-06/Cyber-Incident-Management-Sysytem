@@ -62,4 +62,9 @@ public class AuditController {
         return auditService
                 .getAuditsByUser(userId);
     }
+    @GetMapping
+    public List<AuditEvent> getAllAudits() {
+
+        return auditService.getAllAudits();
+    }
 }

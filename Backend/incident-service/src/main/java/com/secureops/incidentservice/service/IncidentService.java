@@ -1213,5 +1213,12 @@ public class IncidentService {
 	    );
 	}
  
+ public long getActiveIncidentCount(Long analystId) {
+	    return incidentRepository
+	            .countByAssignedToAndStatusNot(
+	                    analystId,
+	                    "RESOLVED"
+	            );
+	}
 
 }

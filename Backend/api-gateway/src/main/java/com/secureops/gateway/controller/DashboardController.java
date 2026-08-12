@@ -553,7 +553,7 @@ public class DashboardController {
             String token) {
 
         return webClient.get()
-                .uri("http://localhost:<8081>/api/settings")
+                .uri("http://localhost:8081/api/settings")
                 .header(
                         HttpHeaders.AUTHORIZATION,
                         token)
@@ -568,7 +568,7 @@ public class DashboardController {
             String token) {
 
         return webClient.put()
-                .uri("http://localhost:<8081>/api/settings")
+                .uri("http://localhost:8081/api/settings")
                 .header(
                         HttpHeaders.AUTHORIZATION,
                         token)

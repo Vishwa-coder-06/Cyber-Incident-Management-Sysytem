@@ -94,4 +94,8 @@ public class AuditService {
      return auditRepository
              .findByUserId(userId);
  }
+ 
+ public List<AuditEvent> getAllAudits() {
+	    return auditRepository.findAll();
+	}
 }

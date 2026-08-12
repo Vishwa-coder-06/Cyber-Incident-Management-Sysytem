@@ -97,5 +97,9 @@ public interface IncidentRepository
     	""")
     	List<Object[]> countByAffectedSystem();
     	
+    	long countByAssignedToAndStatusNot(
+    	        Long analystId,
+    	        String status);
+    	
     	
 }

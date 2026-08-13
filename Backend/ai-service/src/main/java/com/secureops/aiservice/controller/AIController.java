@@ -21,7 +21,5 @@ public class AIController {
     public AIResponse analyze(@RequestBody AIRequest request) {
 
         return aiService.analyzeIncident(request);
-
     }
-
 }

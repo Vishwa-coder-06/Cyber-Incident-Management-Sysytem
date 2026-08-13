@@ -22,7 +22,6 @@ import com.secureops.knowledgeservice.service.KnowledgeService;
 
 @RestController
 @RequestMapping("/api/articles")
-@CrossOrigin("*")
 public class KnowledgeController {
 
     private final KnowledgeService service;

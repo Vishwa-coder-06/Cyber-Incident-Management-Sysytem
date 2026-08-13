@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ReportProblemIcon from "@mui/icons-material/ReportProblem";
@@ -24,15 +25,19 @@ const drawerWidth = 260;
 function ReporterSidebar({ open, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+    onClose();
+  };
 
   const activeStyle = (path) => ({
     mx: 2,
     mt: 1,
     borderRadius: 2,
-
-    bgcolor:
-      location.pathname === path ? "#166b37" : "transparent",
-
+    bgcolor: location.pathname === path ? "#166b37" : "transparent",
     "&:hover": {
       bgcolor:
         location.pathname === path
@@ -71,9 +76,7 @@ function ReporterSidebar({ open, onClose }) {
       </Typography>
 
       <List>
-
         {/* Dashboard */}
-
         <ListItemButton
           sx={activeStyle("/reporter/dashboard")}
           onClick={() => {
@@ -84,12 +87,10 @@ function ReporterSidebar({ open, onClose }) {
           <ListItemIcon>
             <DashboardIcon sx={{ color: "#FFFFFF" }} />
           </ListItemIcon>
-
           <ListItemText primary="Dashboard" />
         </ListItemButton>
 
         {/* Report Incident */}
-
         <ListItemButton
           sx={activeStyle("/reporter/report-incident")}
           onClick={() => {
@@ -100,12 +101,10 @@ function ReporterSidebar({ open, onClose }) {
           <ListItemIcon>
             <ReportProblemIcon sx={{ color: "#FFFFFF" }} />
           </ListItemIcon>
-
           <ListItemText primary="Report Incident" />
         </ListItemButton>
 
         {/* AI Analysis */}
-
         <ListItemButton
           sx={activeStyle("/reporter/ai-analysis")}
           onClick={() => {
@@ -116,12 +115,10 @@ function ReporterSidebar({ open, onClose }) {
           <ListItemIcon>
             <SmartToyIcon sx={{ color: "#FFFFFF" }} />
           </ListItemIcon>
-
           <ListItemText primary="AI Analysis" />
         </ListItemButton>
 
         {/* My Incidents */}
-
         <ListItemButton
           sx={activeStyle("/reporter/my-incidents")}
           onClick={() => {
@@ -132,12 +129,10 @@ function ReporterSidebar({ open, onClose }) {
           <ListItemIcon>
             <AssignmentIcon sx={{ color: "#FFFFFF" }} />
           </ListItemIcon>
-
           <ListItemText primary="My Incidents" />
         </ListItemButton>
 
         {/* Incident Details */}
-
         <ListItemButton
           sx={activeStyle("/reporter/incident-details")}
           onClick={() => {
@@ -148,12 +143,10 @@ function ReporterSidebar({ open, onClose }) {
           <ListItemIcon>
             <DescriptionIcon sx={{ color: "#FFFFFF" }} />
           </ListItemIcon>
-
           <ListItemText primary="Incident Details" />
         </ListItemButton>
 
         {/* Notifications */}
-
         <ListItemButton
           sx={activeStyle("/reporter/notifications")}
           onClick={() => {
@@ -164,12 +157,10 @@ function ReporterSidebar({ open, onClose }) {
           <ListItemIcon>
             <NotificationsIcon sx={{ color: "#FFFFFF" }} />
           </ListItemIcon>
-
           <ListItemText primary="Notifications" />
         </ListItemButton>
 
         {/* Profile */}
-
         <ListItemButton
           sx={activeStyle("/reporter/profile")}
           onClick={() => {
@@ -180,39 +171,29 @@ function ReporterSidebar({ open, onClose }) {
           <ListItemIcon>
             <PersonIcon sx={{ color: "#FFFFFF" }} />
           </ListItemIcon>
-
           <ListItemText primary="Profile" />
         </ListItemButton>
 
         {/* Logout */}
-
         <ListItemButton
           sx={{
             mx: 2,
             mt: 1,
             borderRadius: 2,
-
             "&:hover": {
               bgcolor: "rgba(255,255,255,0.08)",
             },
           }}
-          onClick={() => {
-            navigate("/login");
-            onClose();
-          }}
+          onClick={handleLogout}
         >
           <ListItemIcon>
             <LogoutIcon sx={{ color: "#EF5350" }} />
           </ListItemIcon>
-
           <ListItemText
             primary="Logout"
-            sx={{
-              color: "#EF5350",
-            }}
+            sx={{ color: "#EF5350" }}
           />
         </ListItemButton>
-
       </List>
     </Drawer>
   );

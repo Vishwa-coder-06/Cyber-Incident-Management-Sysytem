@@ -16,7 +16,7 @@ import com.secureops.userservice.service.SystemSettingService;
 
 @RestController
 @RequestMapping("/api/settings")
-@CrossOrigin("*")
+
 public class SystemSettingController {
 
     private final SystemSettingService service;

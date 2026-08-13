@@ -7,81 +7,65 @@ import {
   Badge,
   Box,
 } from "@mui/material";
-
+import { useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SecurityIcon from "@mui/icons-material/Security";
 
 function ManagerTopbar({
   onMenuClick,
-  username = "Vishwa",
+  username = "Manager",
   role = "Incident Manager",
 }) {
+  const navigate = useNavigate();
+
   return (
     <AppBar
       position="fixed"
       elevation={0}
-      sx={{
-        bgcolor: "#6C3CE9",
-      }}
+      sx={{ bgcolor: "#6C3CE9" }}
     >
       <Toolbar>
 
-        <IconButton
-          color="inherit"
-          edge="start"
-          onClick={onMenuClick}
-        >
+        <IconButton color="inherit" edge="start" onClick={onMenuClick}>
           <MenuIcon />
         </IconButton>
 
-        <SecurityIcon
-          sx={{
-            ml: 2,
-            mr: 1,
-          }}
-        />
+        <SecurityIcon sx={{ ml: 2, mr: 1 }} />
 
-        <Typography
-          variant="h5"
-          fontWeight={700}
-        >
+        <Typography variant="h5" fontWeight={700}>
           SecureOps
         </Typography>
 
         <Box sx={{ flexGrow: 1 }} />
 
         <IconButton color="inherit">
-          <Badge
-            badgeContent={4}
-            color="error"
-          >
+          <Badge badgeContent={0} color="error">
             <NotificationsIcon />
           </Badge>
         </IconButton>
 
-        <Avatar
+        {/* Clickable avatar + name → profile */}
+        <Box
           sx={{
-            bgcolor: "#8E6FF7",
-            ml: 2,
+            display: "flex", alignItems: "center", cursor: "pointer", ml: 1,
+            borderRadius: 2, px: 1, py: 0.5,
+            "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
+            transition: "background 0.2s",
           }}
+          onClick={() => navigate("/manager/profile")}
         >
-          V
-        </Avatar>
-
-        <Box ml={2}>
-          <Typography color="white">
-            {username}
-          </Typography>
-
-          <Typography
-            variant="body2"
-            sx={{
-              color: "#D1D5DB",
-            }}
-          >
-            {role}
-          </Typography>
+          <Avatar sx={{ bgcolor: "#8E6FF7", width: 36, height: 36, fontSize: 15, fontWeight: 700 }}>
+            {username.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+          </Avatar>
+          <Box ml={1}>
+            <Typography color="white" sx={{ lineHeight: 1.2, fontWeight: 600, fontSize: 14 }}>
+              {username}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#D1D5DB", fontSize: 12 }}>
+              {role}
+            </Typography>
+          </Box>
         </Box>
 
       </Toolbar>

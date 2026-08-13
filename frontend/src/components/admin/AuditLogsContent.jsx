@@ -1,265 +1,100 @@
+import { useState, useEffect } from "react";
 import {
-  Box,
-  Paper,
-  TextField,
-  Button,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Chip,
-  InputAdornment,
-  MenuItem,
+  Paper, Box, TextField, Button, Table, TableHead, TableBody,
+  TableRow, TableCell, Chip, CircularProgress, Typography, InputAdornment,
 } from "@mui/material";
-
 import SearchIcon from "@mui/icons-material/Search";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import DownloadIcon from "@mui/icons-material/Download";
+import { getAuditLogs, searchAuditLogs } from "../../services/reportService";
+
+const TYPE_COLORS = {
+  LOGIN: "#3B82F6", LOGOUT: "#6B7280", CREATE: "#22C55E",
+  UPDATE: "#F59E0B", DELETE: "#EF4444", ASSIGN: "#A855F7",
+};
+
+function typeColor(type) {
+  return TYPE_COLORS[(type || "").toUpperCase()] ?? "#6B7280";
+}
 
 function AuditLogsContent() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
-  const logs = [
-    {
-      time: "Jun 28 · 10:31",
-      action: "Incident #INC-042 assigned to Kiran T.",
-      actor: "Admin",
-      type: "Assign",
-      color: "#2563EB",
-    },
-    {
-      time: "Jun 28 · 09:55",
-      action: "New user created: meena@company.com (Analyst)",
-      actor: "Admin",
-      type: "User",
-      color: "#2563EB",
-    },
-    {
-      time: "Jun 28 · 09:13",
-      action: "Playbook updated: Account Compromise Response v2.1",
-      actor: "Admin",
-      type: "Playbook",
-      color: "#D97706",
-    },
-    {
-      time: "Jun 28 · 08:40",
-      action: "System setting changed: MFA enforced org-wide",
-      actor: "Admin",
-      type: "Settings",
-      color: "#DC2626",
-    },
-    {
-      time: "Jun 27 · 16:22",
-      action: "User role changed: J. Doe → Reporter",
-      actor: "Admin",
-      type: "User",
-      color: "#16A34A",
-    },
-    {
-      time: "Jun 27 · 14:05",
-      action: "Incident #INC-035 resolved and closed",
-      actor: "Priya S.",
-      type: "Resolved",
-      color: "#16A34A",
-    },
-  ];
+  const fetchLogs = (kw) => {
+    setLoading(true);
+    const call = kw ? searchAuditLogs(kw) : getAuditLogs();
+    call.then((data) => setLogs(Array.isArray(data) ? data : []))
+      .catch(() => setLogs([]))
+      .finally(() => setLoading(false));
+  };
 
-  const inputStyle = {
-    "& .MuiOutlinedInput-root": {
-      bgcolor: "#2B2B2B",
-      borderRadius: 2,
+  useEffect(() => { fetchLogs(""); }, []);
 
-      "& fieldset": {
-        borderColor: "#444",
-      },
-
-      "&:hover fieldset": {
-        borderColor: "#C62828",
-      },
-
-      "&.Mui-focused fieldset": {
-        borderColor: "#C62828",
-      },
-    },
-
-    "& input": {
-      color: "#FFFFFF",
-    },
+  const fieldStyle = {
+    "& .MuiOutlinedInput-root": { bgcolor: "#2B2B2B", "& fieldset": { borderColor: "#444" } },
+    input: { color: "#FFFFFF" },
   };
 
   return (
     <>
-
-      {/* Search */}
-
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          mb: 3,
-        }}
-      >
-
+      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
         <TextField
-          fullWidth
-          placeholder="Search logs..."
-          sx={inputStyle}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: "#9CA3AF" }} />
-              </InputAdornment>
-            ),
+          fullWidth placeholder="Search audit logs..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            if (e.target.value.length === 0 || e.target.value.length >= 2) fetchLogs(e.target.value);
           }}
+          sx={fieldStyle}
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: "#9CA3AF" }} /></InputAdornment> }}
         />
-
-        <TextField
-          select
-          defaultValue="All actions"
-          sx={{
-            width: 150,
-            ...inputStyle,
-          }}
-        >
-          <MenuItem value="All actions">
-            All actions
-          </MenuItem>
-
-          <MenuItem value="User">
-            User
-          </MenuItem>
-
-          <MenuItem value="Incident">
-            Incident
-          </MenuItem>
-
-          <MenuItem value="Settings">
-            Settings
-          </MenuItem>
-
-        </TextField>
-
-        <TextField
-          type="date"
-          sx={{
-            width: 170,
-            ...inputStyle,
-          }}
-           InputLabelProps={{
-           shrink: true,
-        }}
-      />
-
         <Button
           variant="outlined"
-          startIcon={<DownloadIcon />}
-          sx={{
-            color: "#FFFFFF",
-            borderColor: "#555",
-            textTransform: "none",
-
-            "&:hover": {
-              borderColor: "#C62828",
-            },
-          }}
+          onClick={() => fetchLogs("")}
+          sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none" }}
         >
-          Export
+          Refresh
         </Button>
-
       </Box>
 
-      {/* Table */}
-
-      <Paper
-        elevation={0}
-        sx={{
-          bgcolor: "#2B2B2B",
-          borderRadius: 2,
-          overflow: "hidden",
-        }}
-      >
-
-        <Table>
-
-          <TableHead>
-
-            <TableRow>
-
-              <TableCell sx={{ color: "#9CA3AF", fontWeight: 600 }}>
-                Timestamp
-              </TableCell>
-
-              <TableCell sx={{ color: "#9CA3AF", fontWeight: 600 }}>
-                Action
-              </TableCell>
-
-              <TableCell sx={{ color: "#9CA3AF", fontWeight: 600 }}>
-                Actor
-              </TableCell>
-
-              <TableCell sx={{ color: "#9CA3AF", fontWeight: 600 }}>
-                Type
-              </TableCell>
-
-            </TableRow>
-
-          </TableHead>
-
-          <TableBody>
-
-            {logs.map((log) => (
-
-              <TableRow
-                key={log.time + log.action}
-                hover
-                sx={{
-                  "&:hover": {
-                    bgcolor: "#353535",
-                  },
-                }}
-              >
-
-                <TableCell sx={{ color: "#9CA3AF" }}>
-                  {log.time}
-                </TableCell>
-
-                <TableCell
-                  sx={{
-                    color: "#FFFFFF",
-                    fontWeight: 500,
-                  }}
-                >
-                  {log.action}
-                </TableCell>
-
-                <TableCell sx={{ color: "#9CA3AF" }}>
-                  {log.actor}
-                </TableCell>
-
-                <TableCell>
-
-                  <Chip
-                    label={log.type}
-                    size="small"
-                    sx={{
-                      bgcolor: log.color,
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                    }}
-                  />
-
-                </TableCell>
-
+      <Paper sx={{ bgcolor: "#2B2B2B", borderRadius: 2, overflow: "hidden" }}>
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} /></Box>
+        ) : logs.length === 0 ? (
+          <Typography sx={{ color: "#9CA3AF", textAlign: "center", py: 4 }}>No audit logs found.</Typography>
+        ) : (
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ color: "#9CA3AF" }}>Time</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>User ID</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Action</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Description</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Type</TableCell>
               </TableRow>
-
-            ))}
-
-          </TableBody>
-
-        </Table>
-
+            </TableHead>
+            <TableBody>
+              {logs.map((log, i) => (
+                <TableRow key={log.id ?? i} hover sx={{ "&:hover": { bgcolor: "#333" } }}>
+                  <TableCell sx={{ color: "#9CA3AF", fontSize: 13 }}>
+                    {log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}
+                  </TableCell>
+                  <TableCell sx={{ color: "#9CA3AF" }}>{log.userId ?? "—"}</TableCell>
+                  <TableCell sx={{ color: "#FFFFFF", fontWeight: 600 }}>{log.action ?? "—"}</TableCell>
+                  <TableCell sx={{ color: "#9CA3AF" }}>{log.description ?? "—"}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={log.type ?? log.action ?? "—"}
+                      size="small"
+                      sx={{ bgcolor: typeColor(log.type ?? log.action), color: "#FFFFFF", fontWeight: 600 }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </Paper>
-
     </>
   );
 }

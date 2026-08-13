@@ -1,236 +1,173 @@
+import { useState, useEffect } from "react";
 import {
-  Paper,
-  Box,
-  TextField,
-  MenuItem,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
+  Paper, Box, TextField, MenuItem,
+  Table, TableHead, TableBody, TableRow, TableCell,
+  Chip, CircularProgress, Typography, Button,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { getAnalystIncidents } from "../../services/incidentService";
+
+function severityChip(severity) {
+  const s = (severity || "").toUpperCase();
+  const colorMap = {
+    CRITICAL: "#E53935",
+    HIGH: "#EF6C00",
+    MEDIUM: "#F9A825",
+    LOW: "#22C55E",
+  };
+  return (
+    <Chip
+      label={severity}
+      size="small"
+      sx={{ bgcolor: colorMap[s] ?? "#555", color: "#FFFFFF", fontWeight: 600 }}
+    />
+  );
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return "—";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 function AssignedIncidentsContent() {
+  const navigate = useNavigate();
+  const [incidents, setIncidents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [severityFilter, setSeverityFilter] = useState("All priority");
 
-  const incidents = [
-    {
-      id: "#INC-041",
-      title: "Suspicious login from unknown IP",
-      system: "Auth",
-      severity: "Critical",
-      assigned: "2h ago",
-      color: "#E53935",
+  useEffect(() => {
+    const params = {};
+    if (search) params.search = search;
+    if (severityFilter !== "All priority") params.severity = severityFilter;
+
+    setLoading(true);
+    getAnalystIncidents(params)
+      .then((data) => setIncidents(Array.isArray(data) ? data : []))
+      .catch(() => setIncidents([]))
+      .finally(() => setLoading(false));
+  }, [search, severityFilter]);
+
+  const fieldStyle = {
+    "& .MuiOutlinedInput-root": {
+      bgcolor: "#2B2B2B",
+      color: "#FFFFFF",
+      "& fieldset": { borderColor: "#444" },
+      "&:hover fieldset": { borderColor: "#6750F5" },
+      "&.Mui-focused fieldset": { borderColor: "#6750F5" },
     },
-    {
-      id: "#INC-039",
-      title: "Phishing email reported",
-      system: "Email",
-      severity: "High",
-      assigned: "4h ago",
-      color: "#EF6C00",
-    },
-    {
-      id: "#INC-036",
-      title: "VPN anomaly detected",
-      system: "Network",
-      severity: "Medium",
-      assigned: "1d ago",
-      color: "#F9A825",
-    },
-    {
-      id: "#INC-033",
-      title: "Unusual admin account activity",
-      system: "AD",
-      severity: "High",
-      assigned: "2d ago",
-      color: "#EF6C00",
-    },
-  ];
+    "& input::placeholder": { color: "#9CA3AF", opacity: 1 },
+    "& .MuiSvgIcon-root": { color: "#FFFFFF" },
+  };
+
+  const openIncident = (incident) => {
+    const id = incident.incidentId ?? incident.id;
+    navigate("/analyst/investigation", { state: { incidentId: id, incidentTitle: incident.title } });
+  };
 
   return (
     <>
-
-      {/* Search */}
-
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          mb: 3,
-        }}
-      >
-
+      {/* Search & Filter */}
+      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
         <TextField
           fullWidth
-          placeholder="Search..."
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              bgcolor: "#2B2B2B",
-              color: "#FFFFFF",
-
-              "& fieldset": {
-                borderColor: "#444",
-              },
-
-              "&:hover fieldset": {
-                borderColor: "#6750F5",
-              },
-
-              "&.Mui-focused fieldset": {
-                borderColor: "#6750F5",
-              },
-            },
-
-            "& input::placeholder": {
-              color: "#9CA3AF",
-              opacity: 1,
-            },
-          }}
+          placeholder="Search incidents..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={fieldStyle}
         />
 
         <TextField
           select
-          defaultValue="All priority"
-          sx={{
-            width: 180,
-
-            "& .MuiOutlinedInput-root": {
-              bgcolor: "#2B2B2B",
-              color: "#FFFFFF",
-
-              "& fieldset": {
-                borderColor: "#444",
-              },
-            },
-
-            "& .MuiSvgIcon-root": {
-              color: "#FFFFFF",
-            },
-          }}
+          value={severityFilter}
+          onChange={(e) => setSeverityFilter(e.target.value)}
+          sx={{ width: 180, ...fieldStyle }}
         >
-          <MenuItem value="All priority">
-            All priority
-          </MenuItem>
-
-          <MenuItem value="Critical">
-            Critical
-          </MenuItem>
-
-          <MenuItem value="High">
-            High
-          </MenuItem>
-
-          <MenuItem value="Medium">
-            Medium
-          </MenuItem>
-
+          <MenuItem value="All priority">All priority</MenuItem>
+          <MenuItem value="CRITICAL">Critical</MenuItem>
+          <MenuItem value="HIGH">High</MenuItem>
+          <MenuItem value="MEDIUM">Medium</MenuItem>
+          <MenuItem value="LOW">Low</MenuItem>
         </TextField>
-
       </Box>
 
       {/* Table */}
-
-      <Paper
-        elevation={0}
-        sx={{
-          bgcolor: "#2B2B2B",
-          borderRadius: 2,
-          overflow: "hidden",
-        }}
-      >
-
-        <Table>
-
-          <TableHead>
-
-            <TableRow>
-
-              <TableCell sx={{ color: "#9CA3AF" }}>
-                ID
-              </TableCell>
-
-              <TableCell sx={{ color: "#9CA3AF" }}>
-                Title
-              </TableCell>
-
-              <TableCell sx={{ color: "#9CA3AF" }}>
-                System
-              </TableCell>
-
-              <TableCell sx={{ color: "#9CA3AF" }}>
-                Severity
-              </TableCell>
-
-              <TableCell sx={{ color: "#9CA3AF" }}>
-                Assigned
-              </TableCell>
-
-            </TableRow>
-
-          </TableHead>
-
-          <TableBody>
-
-            {incidents.map((incident) => (
-
-              <TableRow
-                key={incident.id}
-                hover
-                sx={{
-                  cursor: "pointer",
-
-                  "&:hover": {
-                    bgcolor: "#333333",
-                  },
-                }}
-              >
-
-                <TableCell sx={{ color: "#9CA3AF" }}>
-                  {incident.id}
-                </TableCell>
-
-                <TableCell
-                  sx={{
-                    color: "#FFFFFF",
-                    fontWeight: 600,
-                  }}
-                >
-                  {incident.title}
-                </TableCell>
-
-                <TableCell sx={{ color: "#9CA3AF" }}>
-                  {incident.system}
-                </TableCell>
-
-                <TableCell>
-
-                  <Chip
-                    label={incident.severity}
-                    size="small"
-                    sx={{
-                      bgcolor: incident.color,
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                    }}
-                  />
-
-                </TableCell>
-
-                <TableCell sx={{ color: "#9CA3AF" }}>
-                  {incident.assigned}
-                </TableCell>
-
+      <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", borderRadius: 2, overflow: "hidden" }}>
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : incidents.length === 0 ? (
+          <Typography sx={{ color: "#9CA3AF", textAlign: "center", py: 4 }}>
+            No assigned incidents found.
+          </Typography>
+        ) : (
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ color: "#9CA3AF" }}>ID</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Title</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>System</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Severity</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Assigned</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Actions</TableCell>
               </TableRow>
+            </TableHead>
 
-            ))}
-
-          </TableBody>
-
-        </Table>
-
+            <TableBody>
+              {incidents.map((incident) => (
+                <TableRow
+                  key={incident.incidentId ?? incident.id}
+                  hover
+                  sx={{ cursor: "pointer", "&:hover": { bgcolor: "#333333" } }}
+                  onClick={() => openIncident(incident)}
+                >
+                  <TableCell sx={{ color: "#9CA3AF" }}>
+                    #INC-{incident.incidentId ?? incident.id}
+                  </TableCell>
+                  <TableCell sx={{ color: "#FFFFFF", fontWeight: 600 }}>
+                    {incident.title}
+                  </TableCell>
+                  <TableCell sx={{ color: "#9CA3AF" }}>
+                    {incident.affectedSystem ?? incident.category ?? "—"}
+                  </TableCell>
+                  <TableCell>{severityChip(incident.severity)}</TableCell>
+                  <TableCell sx={{ color: "#9CA3AF" }}>
+                    {timeAgo(incident.assignedAt ?? incident.createdAt)}
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Box display="flex" gap={1}>
+                      <Button
+                        size="small" variant="outlined"
+                        onClick={() => openIncident(incident)}
+                        sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none",
+                          "&:hover": { borderColor: "#6750F5" } }}
+                      >
+                        Investigate
+                      </Button>
+                      <Button
+                        size="small" variant="outlined"
+                        onClick={() => navigate("/analyst/resolution", {
+                          state: { incidentId: incident.incidentId ?? incident.id, incidentTitle: incident.title }
+                        })}
+                        sx={{ color: "#4ADE80", borderColor: "#4ADE80", textTransform: "none",
+                          "&:hover": { borderColor: "#22C55E" } }}
+                      >
+                        Resolve
+                      </Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </Paper>
-
     </>
   );
 }

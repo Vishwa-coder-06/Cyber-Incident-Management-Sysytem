@@ -21,7 +21,7 @@ import com.secureops.notificationservice.service.NotificationService;
 
 @RestController
 @RequestMapping("/api/notifications")
-@CrossOrigin("*")
+
 public class NotificationController {
 
     private final NotificationService service;

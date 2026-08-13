@@ -25,7 +25,6 @@ import com.secureops.assignmentservice.service.AssignmentService;
 
 @RestController
 @RequestMapping("/api/assignments")
-@CrossOrigin("*")
 public class AssignmentController {
 
     private final AssignmentService assignmentService;

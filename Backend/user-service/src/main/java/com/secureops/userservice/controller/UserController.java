@@ -26,7 +26,7 @@ import com.secureops.userservice.service.UserService;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin("*")
+
 public class UserController {
 
     private final UserService userService;
@@ -118,6 +118,15 @@ public class UserController {
         return userService.updateMyProfile(
                 authentication.getName(),
                 user);
+    }
+    
+    @PutMapping("/me/password")
+    public java.util.Map<String, String> changePassword(
+            Authentication authentication,
+            @RequestBody com.secureops.userservice.dto.ChangePasswordRequest request) {
+
+        userService.changePassword(authentication.getName(), request);
+        return java.util.Map.of("message", "Password changed successfully");
     }
     
     @PostMapping(

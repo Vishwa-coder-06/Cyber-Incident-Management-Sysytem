@@ -34,7 +34,7 @@ import com.secureops.incidentservice.service.IncidentService;
 
 @RestController
 @RequestMapping("/api/incidents")
-@CrossOrigin("*")
+
 public class IncidentController {
 
     private final IncidentService incidentService;

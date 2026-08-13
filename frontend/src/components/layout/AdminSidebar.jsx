@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import GroupIcon from "@mui/icons-material/Group";
@@ -18,12 +19,20 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
+import PersonIcon from "@mui/icons-material/Person";
 
 const drawerWidth = 260;
 
 function AdminSidebar({ open, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+    onClose();
+  };
 
   const activeStyle = (path) => ({
     mx: 2,
@@ -162,19 +171,21 @@ function AdminSidebar({ open, onClose }) {
           <ListItemText primary="Audit Logs" />
         </ListItemButton>
 
-        {/* System Settings */}
+        {/* System Settings — UNDER DEVELOPMENT: hidden from nav, code preserved */}
+
+        {/* Profile */}
 
         <ListItemButton
-          sx={activeStyle("/admin/settings")}
+          sx={activeStyle("/admin/profile")}
           onClick={() => {
-            navigate("/admin/settings");
+            navigate("/admin/profile");
             onClose();
           }}
         >
           <ListItemIcon>
-            <SettingsIcon sx={{ color: "#FFFFFF" }} />
+            <PersonIcon sx={{ color: "#FFFFFF" }} />
           </ListItemIcon>
-          <ListItemText primary="System Settings" />
+          <ListItemText primary="Profile" />
         </ListItemButton>
 
         {/* Logout */}
@@ -189,15 +200,12 @@ function AdminSidebar({ open, onClose }) {
               bgcolor: "rgba(255,255,255,0.08)",
             },
           }}
-          onClick={() => {
-            navigate("/login");
-            onClose();
-          }}
+          onClick={handleLogout}
         >
           <ListItemIcon>
             <LogoutIcon sx={{ color: "#EF5350" }} />
           </ListItemIcon>
-          <ListItemText primary="Logout" />
+          <ListItemText primary="Logout" sx={{ color: "#EF5350" }} />
         </ListItemButton>
 
       </List>

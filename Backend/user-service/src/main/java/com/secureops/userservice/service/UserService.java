@@ -299,6 +299,34 @@ public class UserService {
         return userRepository.save(user);
     }
     
+    public void changePassword(
+            String email,
+            com.secureops.userservice.dto.ChangePasswordRequest request) {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User Not Found"));
+
+        if (request.getCurrentPassword() == null ||
+                !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 4) {
+
+            throw new RuntimeException("New password must be at least 4 characters long");
+        }
+
+        user.setPassword(
+                passwordEncoder.encode(request.getNewPassword()));
+
+        userRepository.save(user);
+    }
+
     public List<User> searchUsers(String keyword) {
 
         return userRepository

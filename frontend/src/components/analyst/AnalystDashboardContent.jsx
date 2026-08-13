@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Grid,
   Paper,
@@ -5,254 +6,175 @@ import {
   Box,
   Chip,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
+import { getAnalystDashboard } from "../../services/assignmentService";
+import { useAuth } from "../../contexts/AuthContext";
+
+import { getMe } from "../../services/userService";
 
 function AnalystDashboardContent() {
-  const incidents = [
-    {
-      id: "#INC-041",
-      title: "Suspicious login",
-      severity: "Critical",
-      color: "#E53935",
-    },
-    {
-      id: "#INC-039",
-      title: "Phishing email",
-      severity: "High",
-      color: "#F57C00",
-    },
-    {
-      id: "#INC-036",
-      title: "VPN anomaly",
-      severity: "Medium",
-      color: "#F9A825",
-    },
-  ];
+  const { user } = useAuth();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const articles = [
-    {
-      title: "Account Compromise Response",
-      info: "Created Jun 27 · 142 views",
-    },
-    {
-      title: "Phishing Triage Checklist",
-      info: "Created Jun 25 · 89 views",
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDashboard = async () => {
+      try {
+        let uid = user?.userId ?? user?.id;
+        if (!uid) {
+          const me = await getMe();
+          uid = me?.userId ?? me?.id;
+        }
+        if (!uid) {
+          if (isMounted) setLoading(false);
+          return;
+        }
+        const res = await getAnalystDashboard(uid);
+        if (isMounted) {
+          setData(res);
+          setError(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setData(null);
+          setError(true);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const severityColor = (sev) => {
+    const s = (sev || "").toUpperCase();
+    if (s === "CRITICAL") return "#E53935";
+    if (s === "HIGH") return "#F57C00";
+    return "#F9A825";
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" py={6}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <Box py={4} textAlign="center">
+        <Typography sx={{ color: "#EF4444", fontSize: 16 }}>
+          Failed to load analyst dashboard data. Please try again later.
+        </Typography>
+      </Box>
+    );
+  }
+
+  const incidents = data?.activeIncidents ?? [];
+  const articles = data?.recentKbArticles ?? [];
 
   return (
     <Grid container spacing={3}>
-
       {/* Summary Cards */}
-
       <Grid size={{ xs: 12, md: 4 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            bgcolor: "#2B2B2B",
-            borderRadius: 2,
-            p: 3,
-          }}
-        >
-          <Typography sx={{color:"#9CA3AF"}}>
-            Assigned to you
-          </Typography>
-
-          <Typography
-            sx={{
-              color: "#FFFFFF",
-              fontSize: 42,
-              fontWeight: 700,
-              mt: 2,
-            }}
-          >
-            7
+        <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", borderRadius: 2, p: 3 }}>
+          <Typography sx={{ color: "#9CA3AF" }}>Assigned to you</Typography>
+          <Typography sx={{ color: "#FFFFFF", fontSize: 42, fontWeight: 700, mt: 2 }}>
+            {data?.assignedToYou ?? 0}
           </Typography>
         </Paper>
       </Grid>
 
       <Grid size={{ xs: 12, md: 4 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            bgcolor: "#2B2B2B",
-            borderRadius: 2,
-            p: 3,
-          }}
-        >
-          <Typography sx={{color:"#9CA3AF"}}>
-            Resolved this week
-          </Typography>
-
-          <Typography
-            sx={{
-              color: "#4ADE80",
-              fontSize: 42,
-              fontWeight: 700,
-              mt: 2,
-            }}
-          >
-            5
+        <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", borderRadius: 2, p: 3 }}>
+          <Typography sx={{ color: "#9CA3AF" }}>Resolved this week</Typography>
+          <Typography sx={{ color: "#4ADE80", fontSize: 42, fontWeight: 700, mt: 2 }}>
+            {data?.resolvedThisWeek ?? 0}
           </Typography>
         </Paper>
       </Grid>
 
       <Grid size={{ xs: 12, md: 4 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            bgcolor: "#2B2B2B",
-            borderRadius: 2,
-            p: 3,
-          }}
-        >
-          <Typography sx={{color:"#9CA3AF"}}>
-            Avg resolution time
-          </Typography>
-
-          <Typography
-            sx={{
-              color: "#F59E0B",
-              fontSize: 42,
-              fontWeight: 700,
-              mt: 2,
-            }}
-          >
-            3.8h
+        <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", borderRadius: 2, p: 3 }}>
+          <Typography sx={{ color: "#9CA3AF" }}>Avg resolution time</Typography>
+          <Typography sx={{ color: "#F59E0B", fontSize: 42, fontWeight: 700, mt: 2 }}>
+            {data?.averageResolutionTime != null
+              ? `${data.averageResolutionTime}h`
+              : "0.0h"}
           </Typography>
         </Paper>
       </Grid>
 
       {/* Active Incidents */}
-
       <Grid size={{ xs: 12, md: 6 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            bgcolor: "#2B2B2B",
-            borderRadius: 2,
-            p: 3,
-            height: "100%",
-          }}
-        >
-          <Typography
-            sx={{
-              color: "#FFFFFF",
-              fontSize: 24,
-              fontWeight: 700,
-              mb: 3,
-            }}
-          >
+        <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", borderRadius: 2, p: 3, height: "100%" }}>
+          <Typography sx={{ color: "#FFFFFF", fontSize: 24, fontWeight: 700, mb: 3 }}>
             Active Incidents
           </Typography>
 
-          {incidents.map((incident) => (
-            <Box key={incident.id} mb={2}>
-
-              <Typography sx={{color:"#9CA3AF"}} fontSize={13}>
-                {incident.id}
-              </Typography>
-
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mt={1}
-              >
-                <Typography
-                  sx={{color:"#9CA3AF",fontWeight: 600,}}
-                >
-                  {incident.title}
+          {incidents.length === 0 ? (
+            <Typography sx={{ color: "#9CA3AF" }}>No active incidents.</Typography>
+          ) : (
+            incidents.map((incident) => (
+              <Box key={incident.incidentId ?? incident.id} mb={2}>
+                <Typography sx={{ color: "#9CA3AF" }} fontSize={13}>
+                  #INC-{incident.incidentId ?? incident.id}
                 </Typography>
-
-                <Chip
-                  label={incident.severity}
-                  size="small"
-                  sx={{
-                    bgcolor: incident.color,
-                    color: "#FFFFFF",
-                    fontWeight: 600,
-                  }}
-                />
+                <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
+                  <Typography sx={{ color: "#9CA3AF", fontWeight: 600 }}>
+                    {incident.title}
+                  </Typography>
+                  <Chip
+                    label={incident.severity}
+                    size="small"
+                    sx={{ bgcolor: severityColor(incident.severity), color: "#FFFFFF", fontWeight: 600 }}
+                  />
+                </Box>
+                <Divider sx={{ mt: 2, bgcolor: "#444" }} />
               </Box>
-
-              <Divider sx={{ mt: 2, bgcolor: "#444" }} />
-
-            </Box>
-          ))}
-
+            ))
+          )}
         </Paper>
       </Grid>
 
-      {/* Recent KB */}
-
+      {/* Recent KB Articles */}
       <Grid size={{ xs: 12, md: 6 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            bgcolor: "#2B2B2B",
-            borderRadius: 2,
-            p: 3,
-            height: "100%",
-          }}
-        >
-          <Typography
-            sx={{
-              color: "#FFFFFF",
-              fontSize: 24,
-              fontWeight: 700,
-              mb: 3,
-            }}
-          >
+        <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", borderRadius: 2, p: 3, height: "100%" }}>
+          <Typography sx={{ color: "#FFFFFF", fontSize: 24, fontWeight: 700, mb: 3 }}>
             Recent KB Articles
           </Typography>
 
-          {articles.map((article) => (
-            <Box key={article.title} mb={3}>
-
-              <Box display="flex">
-
-                <DescriptionIcon
-                  sx={{
-                    color: "#4ADE80",
-                    mr: 2,
-                    mt: 0.5,
-                  }}
-                />
-
-                <Box>
-
-                  <Typography
-                  sx={{
-                    color: "#ffffff",
-                    fontWeight:600,
-                  }}
-                  >
-                    {article.title}
-                  </Typography>
-
-                  <Typography
-                   sx={{
-                    color: "#ffffff",
-                    fontWeight:14,
-                  }}
-                  >
-                    {article.info}
-                  </Typography>
-
+          {articles.length === 0 ? (
+            <Typography sx={{ color: "#9CA3AF" }}>No recent articles.</Typography>
+          ) : (
+            articles.map((article) => (
+              <Box key={article.id ?? article.title} mb={3}>
+                <Box display="flex">
+                  <DescriptionIcon sx={{ color: "#4ADE80", mr: 2, mt: 0.5 }} />
+                  <Box>
+                    <Typography sx={{ color: "#ffffff", fontWeight: 600 }}>
+                      {article.title}
+                    </Typography>
+                    <Typography sx={{ color: "#9CA3AF", fontSize: 14 }}>
+                      {article.category ?? ""}{article.viewCount != null ? ` · ${article.viewCount} views` : ""}
+                    </Typography>
+                  </Box>
                 </Box>
-
+                <Divider sx={{ mt: 2, bgcolor: "#444" }} />
               </Box>
-
-              <Divider sx={{ mt: 2, bgcolor: "#444" }} />
-
-            </Box>
-          ))}
-
+            ))
+          )}
         </Paper>
       </Grid>
-
     </Grid>
   );
 }

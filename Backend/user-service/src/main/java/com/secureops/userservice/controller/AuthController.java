@@ -8,7 +8,6 @@ import com.secureops.userservice.service.AuthService;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin("*")
 public class AuthController {
 
     private final AuthService authService;

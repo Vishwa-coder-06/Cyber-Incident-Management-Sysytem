@@ -39,7 +39,7 @@ function ManagerDashboardContent() {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2 }}>
-            <Typography color="#9CA3AF">Open incidents</Typography>
+            <Typography sx={{color:"#9CA3AF"}}>Open incidents</Typography>
             <Typography variant="h3" sx={{ color: "#3B82F6", fontWeight: 700 }}>
               {data?.openIncidents ?? "—"}
             </Typography>
@@ -48,7 +48,7 @@ function ManagerDashboardContent() {
 
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2 }}>
-            <Typography color="#9CA3AF">MTTR (avg)</Typography>
+            <Typography sx={{color:"#9CA3AF"}}>MTTR (avg)</Typography>
             <Typography variant="h3" sx={{ color: "#F59E0B", fontWeight: 700 }}>
               {data?.mttr != null ? `${data.mttr}h` : "—"}
             </Typography>
@@ -57,7 +57,7 @@ function ManagerDashboardContent() {
 
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2 }}>
-            <Typography color="#9CA3AF">Resolved today</Typography>
+            <Typography sx={{color:"#9CA3AF"}}>Resolved today</Typography>
             <Typography variant="h3" sx={{ color: "#22C55E", fontWeight: 700 }}>
               {data?.resolvedToday ?? "—"}
             </Typography>
@@ -87,7 +87,7 @@ function ManagerDashboardContent() {
                   <Box key={analyst.analystId ?? name} sx={{ mb: 4 }}>
                     <Box display="flex" justifyContent="space-between" mb={1}>
                       <Typography sx={{ color: "#FFFFFF", fontWeight: 600 }}>{name}</Typography>
-                      <Typography color="#9CA3AF">{count}</Typography>
+                      <Typography sx={{color:"#9CA3AF"}}>{count}</Typography>
                     </Box>
                     <LinearProgress
                       variant="determinate"

@@ -245,11 +245,11 @@ function PlaybooksContent() {
       {/* Create/Edit Dialog */}
       <Dialog open={dialog.open} onClose={closeDialog} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: "#2B2B2B", color: "#FFFFFF" } }}>
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center",bgcolor:"#1E1E1E",color:"#B71C1C" }}>
           {dialog.mode === "create" ? "New Playbook" : "Edit Playbook"}
           <IconButton onClick={closeDialog}><CloseIcon sx={{ color: "#9CA3AF" }} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+        <DialogContent sx={{ pt: 1, display: "flex", flexDirection: "column", gap: 2,bgcolor:"#1E1E1E",color:"#FFFFFF" }}>
           <TextField label="Playbook Name" value={form.name} onChange={set("name")}
             sx={inputStyle} InputLabelProps={{ shrink: true }} fullWidth />
           <TextField select label="Category" value={form.category} onChange={set("category")}
@@ -264,7 +264,7 @@ function PlaybooksContent() {
             multiline rows={5} sx={inputStyle} InputLabelProps={{ shrink: true }} fullWidth
             placeholder="Step 1&#10;Step 2&#10;Step 3" />
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2,bgcolor:"#1e1e1e" }}>
           <Button onClick={closeDialog} sx={{ color: "#9CA3AF", textTransform: "none" }}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmit} disabled={saving}
             sx={{ bgcolor: "#C62828", textTransform: "none", "&:hover": { bgcolor: "#B71C1C" } }}>

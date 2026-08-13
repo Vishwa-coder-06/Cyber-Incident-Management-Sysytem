@@ -269,11 +269,11 @@ function KnowledgeBaseMgmtContent() {
       {/* Create/Edit Dialog */}
       <Dialog open={dialog.open} onClose={closeDialog} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: "#2B2B2B", color: "#FFFFFF" } }}>
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" ,bgcolor : "#1E1E1E" , color : "#9CA3AF"}}>
           {dialog.mode === "create" ? "New Knowledge Base Article" : "Edit Article"}
           <IconButton onClick={closeDialog}><CloseIcon sx={{ color: "#9CA3AF" }} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+        <DialogContent sx={{ pt: 1, display: "flex", flexDirection: "column", gap: 2 , bgcolor : "#1E1E1E" }}>
           <TextField label="Title" value={form.title} onChange={set("title")}
             sx={inputStyle} InputLabelProps={{ shrink: true }} fullWidth />
           <TextField label="Category" value={form.category} onChange={set("category")}
@@ -286,11 +286,11 @@ function KnowledgeBaseMgmtContent() {
           <TextField select label="Status" value={form.status} onChange={set("status")}
             sx={inputStyle} InputLabelProps={{ shrink: true }} fullWidth>
             {STATUSES.map((s) => (
-              <MenuItem key={s} value={s} sx={{ color: "#FFF", bgcolor: "#1E1E1E" }}>{s}</MenuItem>
+              <MenuItem key={s} value={s} sx={{bgcolor: "#fffdfd" }}>{s}</MenuItem>
             ))}
           </TextField>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2 ,bgcolor : "#1E1E1E"}}>
           <Button onClick={closeDialog} sx={{ color: "#9CA3AF", textTransform: "none" }}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmit} disabled={saving}
             sx={{ bgcolor: "#C62828", textTransform: "none", "&:hover": { bgcolor: "#B71C1C" } }}>

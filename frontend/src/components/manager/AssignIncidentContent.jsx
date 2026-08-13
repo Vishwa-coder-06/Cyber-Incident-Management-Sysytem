@@ -111,7 +111,7 @@ function AssignIncidentContent() {
               { label: "ID", value: `#INC-${incident.incidentId ?? incident.id ?? incidentId}` },
               { label: "Title", value: incident.title ?? "—" },
               { label: "Severity", value: incident.severity ?? "—", color: "#EF4444" },
-              { label: "Status", value: incident.status ?? "—" },
+              { label: "Status", value: incident.status ?? "—" ,color:"#1d980d"},
               { label: "System", value: incident.affectedSystem ?? incident.system ?? "—" },
             ].map(({ label, value, color }) => (
               <Box key={label} mb={2}>

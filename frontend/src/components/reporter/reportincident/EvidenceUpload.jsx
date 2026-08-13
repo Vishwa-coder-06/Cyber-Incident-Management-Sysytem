@@ -67,7 +67,7 @@ function EvidenceUpload() {
           }}
         />
 
-        <Typography color="#808080">
+        <Typography sx={{color:"#808080"}}>
           Drag files here or click to browse
         </Typography>
       </Paper>

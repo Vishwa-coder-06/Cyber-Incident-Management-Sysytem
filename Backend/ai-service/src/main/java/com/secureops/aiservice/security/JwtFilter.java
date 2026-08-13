@@ -36,19 +36,24 @@ public class JwtFilter extends OncePerRequestFilter {
 
             String token = header.substring(7);
 
-            if (jwtUtil.isTokenValid(token)) {
+            try {
+                if (jwtUtil.isTokenValid(token)) {
 
-                String email = jwtUtil.extractEmail(token);
-                String role = jwtUtil.extractRole(token);
+                    String email = jwtUtil.extractEmail(token);
+                    String role = jwtUtil.extractRole(token);
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                email,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                        );
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    email,
+                                    null,
+                                    List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                            );
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            } catch (Exception e) {
+                // Token is invalid/expired — log and continue; Spring Security will reject if auth required
+                System.out.println("[AI-SERVICE] JWT validation failed: " + e.getMessage());
             }
         }
 

@@ -14,6 +14,12 @@ import com.secureops.aiservice.security.JwtFilter;
 @Configuration
 public class SecurityConfig {
 
+    private final JwtFilter jwtFilter;
+
+    public SecurityConfig(JwtFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
+    }
+
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -23,38 +29,22 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-
+            .cors(cors -> cors.disable())
             .csrf(csrf -> csrf.disable())
-
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
             .authorizeHttpRequests(auth -> auth
-
                     .requestMatchers(
                             "/swagger-ui/**",
                             "/swagger-ui.html",
-                            "/v3/api-docs/**"
-                   )
-
-                    .permitAll()
-
-                    .anyRequest()
-
-                    .authenticated())
-
-            .addFilterBefore(jwtFilter,
-                    UsernamePasswordAuthenticationFilter.class)
-
+                            "/v3/api-docs/**",
+                            "/actuator/**"
+                    ).permitAll()
+                    .anyRequest().authenticated())
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .formLogin(form -> form.disable())
-
             .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();
-    }
-    private final JwtFilter jwtFilter;
-
-    public SecurityConfig(JwtFilter jwtFilter) {
-        this.jwtFilter = jwtFilter;
     }
 }

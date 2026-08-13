@@ -13,6 +13,7 @@ const TAG_COLORS = {
   MALWARE: "#E53935",
   DATA: "#C7923E",
   NETWORK: "#2E7D32",
+  WEBSECURITY:"#C7923E",
 };
 
 function KnowledgeBaseContent() {

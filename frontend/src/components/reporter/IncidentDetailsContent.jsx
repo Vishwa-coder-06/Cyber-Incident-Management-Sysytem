@@ -84,6 +84,7 @@ function IncidentDetailsContent() {
     const s = (sev || "").toUpperCase();
     if (s === "CRITICAL") return "error";
     if (s === "HIGH") return "warning";
+    if (s === "MEDIUM") return "info";
     return "default";
   };
 
@@ -206,9 +207,22 @@ function IncidentDetailsContent() {
         onClose={closePlaybookDialog}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { bgcolor: "#2B2B2B", color: "#FFFFFF", p: 1 } }}
+        PaperProps={{
+          sx: {
+            bgcolor: "#1F1F1F",
+            color: "#FFFFFF",
+            backgroundImage: "none",
+          }
+        }}
       >
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle
+          sx={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            bgcolor: "#1F1F1F",
+            borderBottom: "1px solid #333",
+            px: 3, py: 2,
+          }}
+        >
           <Typography variant="h6" sx={{ fontWeight: 700, color: "#FFFFFF" }}>
             {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title ?? "Playbook Details"}
           </Typography>
@@ -217,7 +231,7 @@ function IncidentDetailsContent() {
           </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ borderColor: "#444" }}>
+        <DialogContent sx={{ bgcolor: "#1F1F1F", px: 3, py: 2.5 }}>
           {playbookDialog.loading ? (
             <Box display="flex" justifyContent="center" py={3}>
               <CircularProgress size={28} />
@@ -273,7 +287,7 @@ function IncidentDetailsContent() {
           )}
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2 }}>
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: "#1F1F1F", borderTop: "1px solid #333" }}>
           <Button
             variant="outlined"
             onClick={closePlaybookDialog}

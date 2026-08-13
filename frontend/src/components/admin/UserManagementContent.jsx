@@ -178,11 +178,11 @@ function UserManagementContent() {
       {/* Create/Edit Dialog */}
       <Dialog open={dialog.open} onClose={closeDialog} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: "#2B2B2B", color: "#FFFFFF" } }}>
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor:"#1E1E1E",color:"#B71C1C" }}>
           {dialog.mode === "create" ? "Create New User" : "Edit User"}
           <IconButton onClick={closeDialog}><CloseIcon sx={{ color: "#9CA3AF" }} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 1 }}>
+        <DialogContent sx={{ pt: 1,bgcolor:"#1E1E1E" }}>
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mt: 1 }}>
             <TextField label="First Name" value={form.firstName} onChange={set("firstName")} sx={fieldStyle} InputLabelProps={{ shrink: true }} />
             <TextField label="Last Name" value={form.lastName} onChange={set("lastName")} sx={fieldStyle} InputLabelProps={{ shrink: true }} />
@@ -199,7 +199,7 @@ function UserManagementContent() {
             <TextField label="Phone" value={form.phone} onChange={set("phone")} sx={fieldStyle} InputLabelProps={{ shrink: true }} />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2 ,bgcolor:"#1E1E1E"}}>
           <Button onClick={closeDialog} sx={{ color: "#9CA3AF", textTransform: "none" }}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmit} disabled={saving}
             sx={{ bgcolor: "#C62828", textTransform: "none", "&:hover": { bgcolor: "#B71C1C" } }}>

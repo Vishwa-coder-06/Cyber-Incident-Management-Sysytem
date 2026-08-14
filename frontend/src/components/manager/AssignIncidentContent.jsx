@@ -15,6 +15,7 @@ function loadLabel(count) {
 }
 
 function avail(analyst) {
+  if (!analyst) return "HIGH";
   if (analyst.availability) return analyst.availability;
   const n = analyst.activeIncidents ?? analyst.activeCount ?? 0;
   if (n >= 7) return "LOW";
@@ -60,10 +61,10 @@ function AssignIncidentContent() {
         managerId: user?.userId ? Number(user.userId) : null,
         status: "ASSIGNED",
       });
-      setSnack({ open: true, message: "Incident assigned successfully!", severity: "success" });
+      setSnack({ open: true, message: "Analyst assigned / reassigned successfully!", severity: "success" });
       setTimeout(() => navigate("/manager/incident-queue"), 1500);
     } catch {
-      setSnack({ open: true, message: "Failed to assign incident.", severity: "error" });
+      setSnack({ open: true, message: "Failed to update assignment.", severity: "error" });
     } finally {
       setAssigning(false);
     }
@@ -94,8 +95,11 @@ function AssignIncidentContent() {
 
   const assignedAnalystInfo = incident.assignedAnalyst ?? incident.assignedTo ?? incident.assignedToName;
 
-  const analystName = (a) =>
-    a.name ?? (`${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || `Analyst ${a.analystId}`);
+  const analystName = (a) => {
+    if (!a) return "Assigned";
+    if (typeof a === "string") return a;
+    return a.name ?? (`${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || `Analyst ${a.analystId ?? a.userId ?? a.id}`);
+  };
 
   return (
     <>
@@ -152,138 +156,89 @@ function AssignIncidentContent() {
         {/* RIGHT */}
         <Grid size={{ xs: 12, md: 7 }}>
           <Paper sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2 }}>
-
-            {isAlreadyAssigned ? (
-              /* ── Already Assigned View ── */
-              <>
-                <Typography variant="h6" sx={{ color: "#FFFFFF", fontWeight: 700, mb: 3 }}>
+            {isAlreadyAssigned && (
+              <Box mb={3}>
+                <Typography variant="h6" sx={{ color: "#FFFFFF", fontWeight: 700, mb: 2 }}>
                   Current Assignment
                 </Typography>
+                <Paper sx={{ bgcolor: "#1A2E1A", border: "1px solid #2E7D32", p: 2.5, borderRadius: 2 }}>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, mb: 1 }}>CURRENTLY ASSIGNED ANALYST</Typography>
+                  <Typography sx={{ color: "#FFFFFF", fontWeight: 700, fontSize: 17 }}>
+                    {analystName(assignedAnalystInfo)}
+                  </Typography>
+                </Paper>
+                <Divider sx={{ my: 3, bgcolor: "#444" }} />
+              </Box>
+            )}
 
-                <Paper sx={{ bgcolor: "#1A2E1A", border: "1px solid #2E7D32", p: 3, borderRadius: 2, mb: 3 }}>
-                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, mb: 1 }}>ASSIGNED ANALYST</Typography>
-                  {(() => {
-                    const aa = incident.assignedAnalyst;
-                    const displayName = typeof aa === "object" && aa !== null
-                      ? analystName(aa)
-                      : typeof assignedAnalystInfo === "string"
-                        ? assignedAnalystInfo
-                        : "Assigned";
-                    const count = typeof aa === "object" && aa !== null ? (aa.activeIncidents ?? 0) : null;
-                    const initials = displayName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+            <Typography variant="h6" sx={{ color: "#FFFFFF", fontWeight: 700, mb: 3 }}>
+              {isAlreadyAssigned ? "Select New Analyst to Reassign" : "Select Analyst"}
+            </Typography>
 
-                    return (
-                      <Box display="flex" alignItems="center" gap={2} mt={1}>
+            {analysts.length === 0 ? (
+              <Typography sx={{ color: "#9CA3AF" }}>No analysts available.</Typography>
+            ) : (
+              analysts.map((analyst) => {
+                const aId = analyst.analystId ?? analyst.userId ?? analyst.id;
+                const isSelected = selectedAnalystId === aId;
+                const count = analyst.activeIncidents ?? analyst.activeCount ?? 0;
+                const { label, color } = loadLabel(count);
+                const name = analystName(analyst);
+                const initials = name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+
+                return (
+                  <Paper
+                    key={aId}
+                    onClick={() => setSelectedAnalystId(aId)}
+                    sx={{
+                      bgcolor: isSelected ? "#2563EB" : "#1E1E1E",
+                      p: 2, mb: 2, borderRadius: 2, cursor: "pointer",
+                      "&:hover": { bgcolor: isSelected ? "#1D4ED8" : "#2A2A2A" },
+                    }}
+                  >
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box display="flex">
                         <Box sx={{
-                          width: 44, height: 44, bgcolor: "#2E7D32",
+                          width: 40, height: 40, bgcolor: isSelected ? "#66BB6A" : "#4DA3FF",
                           borderRadius: 1, display: "flex", alignItems: "center",
-                          justifyContent: "center", color: "#FFFFFF", fontWeight: 700,
+                          justifyContent: "center", color: "#FFFFFF", fontWeight: 700, mr: 2,
                         }}>
                           {initials}
                         </Box>
                         <Box>
-                          <Typography sx={{ color: "#FFFFFF", fontWeight: 700, fontSize: 18 }}>
-                            {displayName}
+                          <Typography sx={{ color: "#FFFFFF", fontWeight: 700 }}>{name}</Typography>
+                          <Typography sx={{ color: "#D1D5DB", fontSize: 13 }}>
+                            {count} active incidents · {avail(analyst)} availability
                           </Typography>
-                          {count !== null && (
-                            <Typography sx={{ color: "#9CA3AF", fontSize: 13 }}>
-                              {count} active incidents · {avail(aa)}
-                            </Typography>
-                          )}
-                          {typeof aa === "object" && aa?.email && (
-                            <Typography sx={{ color: "#9CA3AF", fontSize: 12 }}>{aa.email}</Typography>
+                          {analyst.email && (
+                            <Typography sx={{ color: "#9CA3AF", fontSize: 12 }}>{analyst.email}</Typography>
                           )}
                         </Box>
                       </Box>
-                    );
-                  })()}
-                </Paper>
 
-                <Typography sx={{ color: "#9CA3AF", fontSize: 13 }}>
-                  This incident is already assigned. To reassign, please use the Incident Queue.
-                </Typography>
-
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate("/manager/incident-queue")}
-                  sx={{ mt: 3, color: "#FFFFFF", borderColor: "#555", textTransform: "none" }}
-                >
-                  Back to Incident Queue
-                </Button>
-              </>
-            ) : (
-              /* ── Unassigned: Select Analyst ── */
-              <>
-                <Typography variant="h6" sx={{ color: "#FFFFFF", fontWeight: 700, mb: 3 }}>
-                  Select Analyst
-                </Typography>
-
-                {analysts.length === 0 ? (
-                  <Typography sx={{ color: "#9CA3AF" }}>No analysts available.</Typography>
-                ) : (
-                  analysts.map((analyst) => {
-                    const aId = analyst.analystId ?? analyst.userId ?? analyst.id;
-                    const isSelected = selectedAnalystId === aId;
-                    const count = analyst.activeIncidents ?? analyst.activeCount ?? 0;
-                    const { label, color } = loadLabel(count);
-                    const name = analystName(analyst);
-                    const initials = name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
-
-                    return (
-                      <Paper
-                        key={aId}
-                        onClick={() => setSelectedAnalystId(aId)}
-                        sx={{
-                          bgcolor: isSelected ? "#2563EB" : "#1E1E1E",
-                          p: 2, mb: 2, borderRadius: 2, cursor: "pointer",
-                          "&:hover": { bgcolor: isSelected ? "#1D4ED8" : "#2A2A2A" },
-                        }}
-                      >
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Box display="flex">
-                            <Box sx={{
-                              width: 40, height: 40, bgcolor: isSelected ? "#66BB6A" : "#4DA3FF",
-                              borderRadius: 1, display: "flex", alignItems: "center",
-                              justifyContent: "center", color: "#FFFFFF", fontWeight: 700, mr: 2,
-                            }}>
-                              {initials}
-                            </Box>
-                            <Box>
-                              <Typography sx={{ color: "#FFFFFF", fontWeight: 700 }}>{name}</Typography>
-                              <Typography sx={{ color: "#D1D5DB", fontSize: 13 }}>
-                                {count} active incidents · {avail(analyst)} availability
-                              </Typography>
-                              {analyst.email && (
-                                <Typography sx={{ color: "#9CA3AF", fontSize: 12 }}>{analyst.email}</Typography>
-                              )}
-                            </Box>
-                          </Box>
-
-                          <Chip
-                            label={isSelected ? "Selected" : label}
-                            size="small"
-                            sx={{ bgcolor: isSelected ? "transparent" : color, color: "#FFFFFF", fontWeight: 600 }}
-                          />
-                        </Box>
-                      </Paper>
-                    );
-                  })
-                )}
-
-                <Button
-                  fullWidth variant="contained"
-                  disabled={!selectedAnalystId || assigning}
-                  onClick={handleConfirm}
-                  sx={{
-                    mt: 2, bgcolor: "#2563EB", textTransform: "none",
-                    "&:hover": { bgcolor: "#1D4ED8" },
-                  }}
-                  startIcon={assigning ? <CircularProgress size={14} color="inherit" /> : null}
-                >
-                  {assigning ? "Assigning..." : "Confirm Assignment"}
-                </Button>
-              </>
+                      <Chip
+                        label={isSelected ? "Selected" : label}
+                        size="small"
+                        sx={{ bgcolor: isSelected ? "transparent" : color, color: "#FFFFFF", fontWeight: 600 }}
+                      />
+                    </Box>
+                  </Paper>
+                );
+              })
             )}
+
+            <Button
+              fullWidth variant="contained"
+              disabled={!selectedAnalystId || assigning}
+              onClick={handleConfirm}
+              sx={{
+                mt: 2, bgcolor: "#2563EB", textTransform: "none", py: 1.2, fontWeight: 600,
+                "&:hover": { bgcolor: "#1D4ED8" },
+              }}
+              startIcon={assigning ? <CircularProgress size={14} color="inherit" /> : null}
+            >
+              {assigning ? "Updating..." : isAlreadyAssigned ? "Confirm Reassignment" : "Confirm Assignment"}
+            </Button>
           </Paper>
         </Grid>
       </Grid>

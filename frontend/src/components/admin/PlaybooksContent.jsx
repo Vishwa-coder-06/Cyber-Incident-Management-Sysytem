@@ -84,13 +84,21 @@ function PlaybooksContent() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
+
+  const requestDelete = (id) => setDeleteConfirm({ open: true, id });
+  const closeDeleteConfirm = () => setDeleteConfirm({ open: false, id: null });
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.id) return;
     try {
-      await deletePlaybook(id);
-      setSnack({ open: true, message: "Playbook deleted.", severity: "success" });
+      await deletePlaybook(deleteConfirm.id);
+      setSnack({ open: true, message: "Playbook deleted successfully.", severity: "success" });
       loadPlaybooks(search);
     } catch {
       setSnack({ open: true, message: "Failed to delete playbook.", severity: "error" });
+    } finally {
+      closeDeleteConfirm();
     }
   };
 
@@ -162,7 +170,7 @@ function PlaybooksContent() {
                       <IconButton size="small" onClick={() => openEdit(pb)}>
                         <EditOutlinedIcon sx={{ color: "#9CA3AF" }} />
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleDelete(pb.id)}>
+                      <IconButton size="small" onClick={() => requestDelete(pb.id)}>
                         <DeleteOutlineOutlinedIcon sx={{ color: "#EF4444" }} />
                       </IconButton>
                     </TableCell>
@@ -177,7 +185,7 @@ function PlaybooksContent() {
       {/* View Details Dialog */}
       <Dialog open={viewDialog.open} onClose={closeView} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: "#2B2B2B", color: "#FFFFFF", p: 1 } }}>
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" ,bgcolor : "#1E1E1E" }}>
           <Box display="flex" alignItems="center" gap={1.5}>
             <Typography variant="h6" sx={{ fontWeight: 700, color: "#FFFFFF" }}>
               {viewDialog.pb?.name ?? viewDialog.pb?.title ?? "Playbook Details"}
@@ -189,7 +197,7 @@ function PlaybooksContent() {
           </Box>
           <IconButton onClick={closeView}><CloseIcon sx={{ color: "#9CA3AF" }} /></IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: "#444", display: "flex", flexDirection: "column", gap: 2 }}>
+        <DialogContent dividers sx={{ borderColor: "#444", display: "flex", flexDirection: "column", gap: 2 ,bgcolor:"#1E1E1E"}}>
           {viewDialog.pb?.description && (
             <Box>
               <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>DESCRIPTION</Typography>
@@ -231,7 +239,7 @@ function PlaybooksContent() {
             )}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
+        <DialogActions sx={{ px: 3, py: 2 , bgcolor : "#1E1E1E" }}>
           <Button variant="outlined" onClick={closeView} sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none" }}>
             Close
           </Button>
@@ -269,6 +277,36 @@ function PlaybooksContent() {
           <Button variant="contained" onClick={handleSubmit} disabled={saving}
             sx={{ bgcolor: "#C62828", textTransform: "none", "&:hover": { bgcolor: "#B71C1C" } }}>
             {saving ? <CircularProgress size={18} color="inherit" /> : dialog.mode === "create" ? "Create" : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirm.open}
+        onClose={closeDeleteConfirm}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { bgcolor: "#1F1F1F", color: "#FFFFFF" } }}
+      >
+        <DialogTitle sx={{ color: "#EF4444", fontWeight: 700, pb: 1 }}>
+          Delete Playbook?
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "#D1D5DB", lineHeight: 1.6 }}>
+            Are you sure you want to delete this playbook? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={closeDeleteConfirm} sx={{ color: "#9CA3AF", textTransform: "none" }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={confirmDelete}
+            sx={{ bgcolor: "#C62828", textTransform: "none", fontWeight: 600, "&:hover": { bgcolor: "#B71C1C" } }}
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

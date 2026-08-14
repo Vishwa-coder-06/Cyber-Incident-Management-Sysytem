@@ -3,7 +3,7 @@ import {
   Paper, Box, TextField, Button, Table, TableHead, TableBody,
   TableRow, TableCell, Avatar, Chip, CircularProgress, Typography,
   Dialog, DialogTitle, DialogContent, DialogActions, MenuItem,
-  IconButton, Snackbar, Alert,
+  IconButton, Snackbar, Alert, Divider,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -41,6 +41,7 @@ function UserManagementContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState({ open: false, mode: "create", user: null });
+  const [viewUser, setViewUser] = useState(null); // User Details Modal State
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [snack, setSnack] = useState({ open: false, message: "", severity: "success" });
@@ -139,7 +140,7 @@ function UserManagementContent() {
                 <TableCell sx={{ color: "#9CA3AF" }}>Email</TableCell>
                 <TableCell sx={{ color: "#9CA3AF" }}>Role</TableCell>
                 <TableCell sx={{ color: "#9CA3AF" }}>Department</TableCell>
-                <TableCell sx={{ color: "#9CA3AF" }}>Actions</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Phone</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -147,10 +148,15 @@ function UserManagementContent() {
                 const id = user.userId ?? user.id;
                 const name = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.username || "—";
                 return (
-                  <TableRow key={id} hover sx={{ "&:hover": { bgcolor: "#333" } }}>
+                  <TableRow
+                    key={id}
+                    hover
+                    onClick={() => setViewUser(user)}
+                    sx={{ cursor: "pointer", "&:hover": { bgcolor: "#333333" } }}
+                  >
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                        <Avatar sx={{ bgcolor: roleColor(user.role), width: 30, height: 30, fontSize: 13 }}>
+                        <Avatar sx={{ bgcolor: roleColor(user.role), width: 32, height: 32, fontSize: 13, fontWeight: 700 }}>
                           {initials(user)}
                         </Avatar>
                         <Box sx={{ color: "#FFFFFF", fontWeight: 600 }}>{name}</Box>
@@ -159,14 +165,10 @@ function UserManagementContent() {
                     <TableCell sx={{ color: "#9CA3AF" }}>{user.email}</TableCell>
                     <TableCell>
                       <Chip label={user.role} size="small"
-                        sx={{ bgcolor: roleColor(user.role), color: "#FFFFFF" }} />
+                        sx={{ bgcolor: roleColor(user.role), color: "#FFFFFF", fontWeight: 600 }} />
                     </TableCell>
                     <TableCell sx={{ color: "#9CA3AF" }}>{user.department ?? "—"}</TableCell>
-                    <TableCell>
-                      <IconButton size="small" onClick={() => openEdit(user)}>
-                        <EditIcon sx={{ color: "#9CA3AF", fontSize: 18 }} />
-                      </IconButton>
-                    </TableCell>
+                    <TableCell sx={{ color: "#9CA3AF" }}>{user.phone ?? "—"}</TableCell>
                   </TableRow>
                 );
               })}
@@ -174,6 +176,69 @@ function UserManagementContent() {
           </Table>
         )}
       </Paper>
+
+      {/* User Details Dialog */}
+      <Dialog
+        open={Boolean(viewUser)}
+        onClose={() => setViewUser(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { bgcolor: "#1F1F1F", color: "#FFFFFF", borderRadius: 2 } }}
+      >
+        {viewUser && (
+          <>
+            <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #333", py: 2 }}>
+              <Typography variant="h6" fontWeight={700} color="#FFFFFF">
+                User Details
+              </Typography>
+              <IconButton onClick={() => setViewUser(null)}><CloseIcon sx={{ color: "#9CA3AF" }} /></IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ py: 3 }}>
+              <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
+                <Avatar sx={{ bgcolor: roleColor(viewUser.role), width: 64, height: 64, fontSize: 24, fontWeight: 700, mb: 1.5 }}>
+                  {initials(viewUser)}
+                </Avatar>
+                <Typography variant="h6" fontWeight={700} color="#FFFFFF">
+                  {`${viewUser.firstName ?? ""} ${viewUser.lastName ?? ""}`.trim() || viewUser.username}
+                </Typography>
+                <Chip label={viewUser.role} size="small" sx={{ bgcolor: roleColor(viewUser.role), color: "#FFF", mt: 0.5, fontWeight: 600 }} />
+              </Box>
+
+              <Divider sx={{ bgcolor: "#333", mb: 2.5 }} />
+
+              {[
+                { label: "Email", value: viewUser.email },
+                { label: "Department", value: viewUser.department ?? "—" },
+                { label: "Phone", value: viewUser.phone ?? "—" },
+                { label: "Status", value: viewUser.status ?? "ACTIVE" },
+              ].map(({ label, value }) => (
+                <Box key={label} mb={1.8}>
+                  <Typography sx={{ color: "#888888", fontSize: 12 }}>{label}</Typography>
+                  <Typography sx={{ color: "#FFFFFF", fontWeight: 600, fontSize: 15 }}>{value}</Typography>
+                </Box>
+              ))}
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, pb: 2.5, borderTop: "1px solid #333", pt: 2 }}>
+              <Button onClick={() => setViewUser(null)} sx={{ color: "#9CA3AF", textTransform: "none" }}>
+                Close
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={() => {
+                  const target = viewUser;
+                  setViewUser(null);
+                  openEdit(target);
+                }}
+                sx={{ bgcolor: "#C62828", textTransform: "none", fontWeight: 600, "&:hover": { bgcolor: "#B71C1C" } }}
+              >
+                Edit User
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialog.open} onClose={closeDialog} maxWidth="sm" fullWidth

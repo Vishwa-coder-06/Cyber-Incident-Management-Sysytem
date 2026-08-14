@@ -124,13 +124,21 @@ function KnowledgeBaseMgmtContent() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
+
+  const requestDelete = (id) => setDeleteConfirm({ open: true, id });
+  const closeDeleteConfirm = () => setDeleteConfirm({ open: false, id: null });
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.id) return;
     try {
-      await deleteArticle(id);
-      setSnack({ open: true, message: "Article deleted.", severity: "success" });
+      await deleteArticle(deleteConfirm.id);
+      setSnack({ open: true, message: "Article deleted successfully.", severity: "success" });
       loadArticles(search);
     } catch {
       setSnack({ open: true, message: "Failed to delete article.", severity: "error" });
+    } finally {
+      closeDeleteConfirm();
     }
   };
 
@@ -163,7 +171,7 @@ function KnowledgeBaseMgmtContent() {
         ].map(({ label, value, color }) => (
           <Grid size={{ xs: 12, md: 4 }} key={label}>
             <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", borderRadius: 2, p: 3 }}>
-              <Typography color="#9CA3AF">{label}</Typography>
+              <Typography sx={{color:"#9CA3AF"}}>{label}</Typography>
               <Typography variant="h3" sx={{ color, fontWeight: 700, mt: 1 }}>{value}</Typography>
             </Paper>
           </Grid>
@@ -208,7 +216,7 @@ function KnowledgeBaseMgmtContent() {
                       <IconButton size="small" onClick={() => openEdit(article)}>
                         <EditOutlinedIcon sx={{ color: "#9CA3AF", fontSize: 18 }} />
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleDelete(article.id)}>
+                      <IconButton size="small" onClick={() => requestDelete(article.id)}>
                         <DeleteOutlineIcon sx={{ color: "#EF4444", fontSize: 18 }} />
                       </IconButton>
                     </TableCell>
@@ -223,15 +231,15 @@ function KnowledgeBaseMgmtContent() {
       {/* View Article Details Dialog */}
       <Dialog open={viewDialog.open} onClose={closeView} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: "#2B2B2B", color: "#FFFFFF", p: 1 } }}>
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" ,bgcolor : "#1E1E1E" }}>
           <Box display="flex" alignItems="center" gap={1.5}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: "#FFFFFF" }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 ,color:"#C62828" }}>
               {viewDialog.article?.title ?? "Article Details"}
             </Typography>
           </Box>
           <IconButton onClick={closeView}><CloseIcon sx={{ color: "#9CA3AF" }} /></IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: "#444", display: "flex", flexDirection: "column", gap: 2 }}>
+        <DialogContent dividers sx={{ borderColor: "#444", display: "flex", flexDirection: "column", gap: 2 , bgcolor : "#1E1E1E"}}>
           {viewDialog.article?.category && (
             <Box>
               <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>CATEGORY</Typography>
@@ -255,7 +263,7 @@ function KnowledgeBaseMgmtContent() {
             </Typography>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
+        <DialogActions sx={{ px: 3, py: 2 ,bgcolor: "#1E1E1E"}}>
           <Button variant="outlined" onClick={closeView} sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none" }}>
             Close
           </Button>
@@ -295,6 +303,36 @@ function KnowledgeBaseMgmtContent() {
           <Button variant="contained" onClick={handleSubmit} disabled={saving}
             sx={{ bgcolor: "#C62828", textTransform: "none", "&:hover": { bgcolor: "#B71C1C" } }}>
             {saving ? <CircularProgress size={18} color="inherit" /> : dialog.mode === "create" ? "Create" : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirm.open}
+        onClose={closeDeleteConfirm}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { bgcolor: "#1F1F1F", color: "#FFFFFF" } }}
+      >
+        <DialogTitle sx={{ color: "#EF4444", fontWeight: 700, pb: 1 }}>
+          Delete Knowledge Base Article?
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "#D1D5DB", lineHeight: 1.6 }}>
+            Are you sure you want to delete this knowledge base article? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={closeDeleteConfirm} sx={{ color: "#9CA3AF", textTransform: "none" }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={confirmDelete}
+            sx={{ bgcolor: "#C62828", textTransform: "none", fontWeight: 600, "&:hover": { bgcolor: "#B71C1C" } }}
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

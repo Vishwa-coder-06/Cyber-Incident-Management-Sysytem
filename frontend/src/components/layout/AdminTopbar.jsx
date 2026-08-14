@@ -12,12 +12,22 @@ import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SecurityIcon from "@mui/icons-material/Security";
 
+import { useState, useEffect } from "react";
+import { getUnreadCount } from "../../services/notificationService";
+
 function AdminTopbar({
   onMenuClick,
   username = "Admin",
   role = "Admin",
 }) {
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    getUnreadCount()
+      .then((count) => setUnreadCount(typeof count === "number" ? count : 0))
+      .catch(() => setUnreadCount(0));
+  }, []);
 
   return (
     <AppBar
@@ -43,8 +53,8 @@ function AdminTopbar({
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <IconButton color="inherit">
-          <Badge badgeContent={0} color="error">
+        <IconButton color="inherit" onClick={() => navigate("/admin/audit-logs")}>
+          <Badge badgeContent={unreadCount} color="error">
             <NotificationsIcon />
           </Badge>
         </IconButton>

@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import {
   Box, Grid, Paper, Typography, Chip, Stack, Button, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CloseIcon from "@mui/icons-material/Close";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getArticleById, getArticles } from "../../services/knowledgeService";
+import { getArticleById, getArticles, getPlaybooks } from "../../services/knowledgeService";
 
 function ArticleViewContent() {
   const location = useLocation();
@@ -15,6 +17,9 @@ function ArticleViewContent() {
 
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Playbook Dialog State
+  const [playbookDialog, setPlaybookDialog] = useState({ open: false, playbook: null, loading: false });
 
   useEffect(() => {
     setLoading(true);
@@ -37,6 +42,26 @@ function ArticleViewContent() {
         .finally(() => setLoading(false));
     }
   }, [articleId]);
+
+  const handlePlaybookClick = async (playbookTitle) => {
+    if (!playbookTitle) return;
+    setPlaybookDialog({ open: true, playbook: null, loading: true });
+    try {
+      const all = await getPlaybooks();
+      const found = Array.isArray(all)
+        ? all.find((p) =>
+            (p.name ?? p.title ?? "").toLowerCase() === playbookTitle.toLowerCase()
+          ) ?? all.find((p) =>
+            (p.name ?? p.title ?? "").toLowerCase().includes(playbookTitle.toLowerCase().split(" ")[0])
+          )
+        : null;
+      setPlaybookDialog({ open: true, playbook: found ?? { title: playbookTitle }, loading: false });
+    } catch {
+      setPlaybookDialog({ open: true, playbook: { title: playbookTitle }, loading: false });
+    }
+  };
+
+  const closePlaybookDialog = () => setPlaybookDialog({ open: false, playbook: null, loading: false });
 
   if (loading) {
     return <Box display="flex" justifyContent="center" py={6}><CircularProgress /></Box>;
@@ -68,6 +93,8 @@ function ArticleViewContent() {
     : article.category
     ? [article.category]
     : [];
+
+  const relatedPlaybookTitle = article.playbookTitle ?? article.references?.[0] ?? "General Incident Response Playbook";
 
   return (
     <>
@@ -173,10 +200,17 @@ function ArticleViewContent() {
               Related Playbook
             </Typography>
 
-            <Box display="flex" alignItems="center" mb={4}>
+            <Box
+              onClick={() => handlePlaybookClick(relatedPlaybookTitle)}
+              sx={{
+                display: "flex", alignItems: "center", mb: 4, cursor: "pointer", p: 1, borderRadius: 1,
+                "&:hover": { bgcolor: "rgba(78, 161, 255, 0.1)" },
+                transition: "background 0.2s",
+              }}
+            >
               <DescriptionIcon sx={{ color: "#4EA1FF", mr: 1 }} />
-              <Typography sx={{ color: "#4EA1FF", fontWeight: 600 }}>
-                {article.playbookTitle ?? article.references?.[0] ?? "General Incident Response Playbook"}
+              <Typography sx={{ color: "#4EA1FF", fontWeight: 600, textDecoration: "underline", textDecorationColor: "rgba(78, 161, 255, 0.4)" }}>
+                {relatedPlaybookTitle}
               </Typography>
             </Box>
 
@@ -190,6 +224,110 @@ function ArticleViewContent() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Playbook Details Dialog */}
+      <Dialog
+        open={playbookDialog.open}
+        onClose={closePlaybookDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#1F1F1F",
+            color: "#FFFFFF",
+            backgroundImage: "none",
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            bgcolor: "#1F1F1F",
+            borderBottom: "1px solid #333",
+            px: 3, py: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#FFFFFF" }}>
+            {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title ?? "Playbook Details"}
+          </Typography>
+          <IconButton onClick={closePlaybookDialog}>
+            <CloseIcon sx={{ color: "#9CA3AF" }} />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ bgcolor: "#1F1F1F", px: 3, py: 2.5 }}>
+          {playbookDialog.loading ? (
+            <Box display="flex" justifyContent="center" py={3}>
+              <CircularProgress size={28} />
+            </Box>
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {playbookDialog.playbook?.category && (
+                <Box>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>CATEGORY</Typography>
+                  <Chip
+                    label={playbookDialog.playbook.category}
+                    size="small"
+                    sx={{ bgcolor: "#2563EB", color: "#FFF" }}
+                  />
+                </Box>
+              )}
+
+              {playbookDialog.playbook?.description && (
+                <Box>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>DESCRIPTION</Typography>
+                  <Typography sx={{ color: "#D1D5DB", lineHeight: 1.6 }}>
+                    {playbookDialog.playbook.description}
+                  </Typography>
+                </Box>
+              )}
+
+              <Box>
+                <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 1 }}>CONTAINMENT STEPS</Typography>
+                {Array.isArray(playbookDialog.playbook?.steps) && playbookDialog.playbook.steps.length > 0 ? (
+                  playbookDialog.playbook.steps.map((step, idx) => (
+                    <Box key={idx} display="flex" gap={1.5} mb={1}>
+                      <Typography sx={{ color: "#42A5F5", fontWeight: 700, minWidth: 20 }}>{idx + 1}.</Typography>
+                      <Typography sx={{ color: "#FFFFFF", lineHeight: 1.5 }}>
+                        {typeof step === "string" ? step : step.name ?? step.title ?? JSON.stringify(step)}
+                      </Typography>
+                    </Box>
+                  ))
+                ) : typeof playbookDialog.playbook?.steps === "string" && playbookDialog.playbook.steps.trim() ? (
+                  playbookDialog.playbook.steps.split("\n").filter(Boolean).map((step, idx) => (
+                    <Box key={idx} display="flex" gap={1.5} mb={1}>
+                      <Typography sx={{ color: "#42A5F5", fontWeight: 700, minWidth: 20 }}>{idx + 1}.</Typography>
+                      <Typography sx={{ color: "#FFFFFF", lineHeight: 1.5 }}>{step}</Typography>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography sx={{ color: "#9CA3AF" }}>
+                    {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title
+                      ? "No containment steps defined."
+                      : "Playbook details not available."}
+                  </Typography>
+                )}
+              </Box>
+
+              {playbookDialog.playbook?.updatedAt && (
+                <Typography sx={{ color: "#9CA3AF", fontSize: 12 }}>
+                  Last updated: {new Date(playbookDialog.playbook.updatedAt).toLocaleDateString()}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: "#1F1F1F", borderTop: "1px solid #333" }}>
+          <Button
+            variant="outlined"
+            onClick={closePlaybookDialog}
+            sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none" }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

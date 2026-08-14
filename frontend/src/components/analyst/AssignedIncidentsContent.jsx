@@ -34,6 +34,21 @@ function timeAgo(dateStr) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function statusChip(status) {
+  const s = (status || "ASSIGNED").toUpperCase();
+  let bg = "#D97706";
+  if (s === "RESOLVED" || s === "CLOSED" || s === "READY_TO_CLOSE") bg = "#16A34A";
+  else if (s === "IN_PROGRESS" || s === "INVESTIGATING") bg = "#2563EB";
+
+  return (
+    <Chip
+      label={status || "ASSIGNED"}
+      size="small"
+      sx={{ bgcolor: bg, color: "#FFFFFF", fontWeight: 600 }}
+    />
+  );
+}
+
 function AssignedIncidentsContent() {
   const navigate = useNavigate();
   const [incidents, setIncidents] = useState([]);
@@ -114,56 +129,65 @@ function AssignedIncidentsContent() {
                 <TableCell sx={{ color: "#9CA3AF" }}>Title</TableCell>
                 <TableCell sx={{ color: "#9CA3AF" }}>System</TableCell>
                 <TableCell sx={{ color: "#9CA3AF" }}>Severity</TableCell>
+                <TableCell sx={{ color: "#9CA3AF" }}>Status</TableCell>
                 <TableCell sx={{ color: "#9CA3AF" }}>Assigned</TableCell>
                 <TableCell sx={{ color: "#9CA3AF" }}>Actions</TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {incidents.map((incident) => (
-                <TableRow
-                  key={incident.incidentId ?? incident.id}
-                  hover
-                  sx={{ cursor: "pointer", "&:hover": { bgcolor: "#333333" } }}
-                  onClick={() => openIncident(incident)}
-                >
-                  <TableCell sx={{ color: "#9CA3AF" }}>
-                    #INC-{incident.incidentId ?? incident.id}
-                  </TableCell>
-                  <TableCell sx={{ color: "#FFFFFF", fontWeight: 600 }}>
-                    {incident.title}
-                  </TableCell>
-                  <TableCell sx={{ color: "#9CA3AF" }}>
-                    {incident.affectedSystem ?? incident.category ?? "—"}
-                  </TableCell>
-                  <TableCell>{severityChip(incident.severity)}</TableCell>
-                  <TableCell sx={{ color: "#9CA3AF" }}>
-                    {timeAgo(incident.assignedAt ?? incident.createdAt)}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Box display="flex" gap={1}>
-                      <Button
-                        size="small" variant="outlined"
-                        onClick={() => openIncident(incident)}
-                        sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none",
-                          "&:hover": { borderColor: "#6750F5" } }}
-                      >
-                        Investigate
-                      </Button>
-                      <Button
-                        size="small" variant="outlined"
-                        onClick={() => navigate("/analyst/resolution", {
-                          state: { incidentId: incident.incidentId ?? incident.id, incidentTitle: incident.title }
-                        })}
-                        sx={{ color: "#4ADE80", borderColor: "#4ADE80", textTransform: "none",
-                          "&:hover": { borderColor: "#22C55E" } }}
-                      >
-                        Resolve
-                      </Button>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {incidents.map((incident) => {
+                const statusStr = (incident.status || "ASSIGNED").toUpperCase();
+                const isResolved = ["RESOLVED", "CLOSED", "READY_TO_CLOSE"].includes(statusStr);
+
+                return (
+                  <TableRow
+                    key={incident.incidentId ?? incident.id}
+                    hover
+                    sx={{ cursor: "pointer", "&:hover": { bgcolor: "#333333" } }}
+                    onClick={() => openIncident(incident)}
+                  >
+                    <TableCell sx={{ color: "#9CA3AF" }}>
+                      #INC-{incident.incidentId ?? incident.id}
+                    </TableCell>
+                    <TableCell sx={{ color: "#FFFFFF", fontWeight: 600 }}>
+                      {incident.title}
+                    </TableCell>
+                    <TableCell sx={{ color: "#9CA3AF" }}>
+                      {incident.affectedSystem ?? incident.category ?? "—"}
+                    </TableCell>
+                    <TableCell>{severityChip(incident.severity)}</TableCell>
+                    <TableCell>{statusChip(incident.status)}</TableCell>
+                    <TableCell sx={{ color: "#9CA3AF" }}>
+                      {timeAgo(incident.assignedAt ?? incident.createdAt)}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Box display="flex" gap={1}>
+                        <Button
+                          size="small" variant="outlined"
+                          onClick={() => openIncident(incident)}
+                          sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none",
+                            "&:hover": { borderColor: "#6750F5" } }}
+                        >
+                          Investigate
+                        </Button>
+                        {!isResolved && (
+                          <Button
+                            size="small" variant="outlined"
+                            onClick={() => navigate("/analyst/resolution", {
+                              state: { incidentId: incident.incidentId ?? incident.id, incidentTitle: incident.title }
+                            })}
+                            sx={{ color: "#4ADE80", borderColor: "#4ADE80", textTransform: "none",
+                              "&:hover": { borderColor: "#22C55E" } }}
+                          >
+                            Resolve
+                          </Button>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

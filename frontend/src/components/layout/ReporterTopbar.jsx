@@ -12,12 +12,22 @@ import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SecurityIcon from "@mui/icons-material/Security";
 
+import { useState, useEffect } from "react";
+import { getUnreadCount } from "../../services/notificationService";
+
 function ReporterTopbar({
   onMenuClick,
   username = "Reporter",
   role = "Reporter",
 }) {
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    getUnreadCount()
+      .then((count) => setUnreadCount(typeof count === "number" ? count : 0))
+      .catch(() => setUnreadCount(0));
+  }, []);
 
   return (
     <AppBar
@@ -44,7 +54,7 @@ function ReporterTopbar({
         <Box sx={{ flexGrow: 1 }} />
 
         <IconButton color="inherit" onClick={() => navigate("/reporter/notifications")}>
-          <Badge badgeContent={0} color="error">
+          <Badge badgeContent={unreadCount} color="error">
             <NotificationsIcon />
           </Badge>
         </IconButton>

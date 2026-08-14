@@ -12,9 +12,11 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import { getAnalystDashboard } from "../../services/assignmentService";
 import { useAuth } from "../../contexts/AuthContext";
 
+import { useNavigate } from "react-router-dom";
 import { getMe } from "../../services/userService";
 
 function AnalystDashboardContent() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -156,22 +158,36 @@ function AnalystDashboardContent() {
           {articles.length === 0 ? (
             <Typography sx={{ color: "#9CA3AF" }}>No recent articles.</Typography>
           ) : (
-            articles.map((article) => (
-              <Box key={article.id ?? article.title} mb={3}>
-                <Box display="flex">
-                  <DescriptionIcon sx={{ color: "#4ADE80", mr: 2, mt: 0.5 }} />
-                  <Box>
-                    <Typography sx={{ color: "#ffffff", fontWeight: 600 }}>
-                      {article.title}
-                    </Typography>
-                    <Typography sx={{ color: "#9CA3AF", fontSize: 14 }}>
-                      {article.category ?? ""}{article.viewCount != null ? ` · ${article.viewCount} views` : ""}
-                    </Typography>
+            articles.map((article) => {
+              const artId = article.id ?? article.articleId;
+              return (
+                <Box
+                  key={artId ?? article.title}
+                  mb={3}
+                  onClick={() => navigate("/analyst/article-view", { state: { articleId: artId } })}
+                  sx={{
+                    cursor: "pointer",
+                    borderRadius: 1,
+                    p: 1,
+                    "&:hover": { bgcolor: "#343434" },
+                    transition: "background 0.2s",
+                  }}
+                >
+                  <Box display="flex">
+                    <DescriptionIcon sx={{ color: "#4ADE80", mr: 2, mt: 0.5 }} />
+                    <Box>
+                      <Typography sx={{ color: "#ffffff", fontWeight: 600 }}>
+                        {article.title}
+                      </Typography>
+                      <Typography sx={{ color: "#9CA3AF", fontSize: 14 }}>
+                        {article.category ?? ""}{article.viewCount != null ? ` · ${article.viewCount} views` : ""}
+                      </Typography>
+                    </Box>
                   </Box>
+                  <Divider sx={{ mt: 2, bgcolor: "#444" }} />
                 </Box>
-                <Divider sx={{ mt: 2, bgcolor: "#444" }} />
-              </Box>
-            ))
+              );
+            })
           )}
         </Paper>
       </Grid>

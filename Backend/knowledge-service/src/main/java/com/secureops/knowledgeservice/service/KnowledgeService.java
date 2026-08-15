@@ -159,11 +159,15 @@ public class KnowledgeService {
             String search,
             String category) {
 
-        return repository.searchArticles(
-                search,
-                category
-        );
+        if (search != null && !search.trim().isEmpty()) {
+            return repository.findByTitleContainingIgnoreCase(search.trim());
+        }
+        if (category != null && !category.trim().isEmpty()) {
+            return repository.findByCategory(category.trim());
+        }
+        return repository.findAll();
     }
+
     
  // =====================================================
  // PLAYBOOK MANAGEMENT

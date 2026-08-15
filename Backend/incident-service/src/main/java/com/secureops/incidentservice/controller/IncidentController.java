@@ -28,6 +28,8 @@ import com.secureops.incidentservice.dto.ReporterDashboardResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentDetailResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentRequest;
 import com.secureops.incidentservice.dto.ResolutionStepRequest;
+import com.secureops.incidentservice.dto.ResolveIncidentRequest;
+import com.secureops.incidentservice.dto.IncidentResolutionResponse;
 import com.secureops.incidentservice.entity.Incident;
 import com.secureops.incidentservice.entity.IncidentTimelineEvent;
 import com.secureops.incidentservice.service.IncidentService;
@@ -38,10 +40,15 @@ import com.secureops.incidentservice.service.IncidentService;
 public class IncidentController {
 
     private final IncidentService incidentService;
+    private final com.secureops.incidentservice.service.AITrainingService trainingService;
 
-    public IncidentController(IncidentService incidentService) {
+    public IncidentController(
+            IncidentService incidentService,
+            com.secureops.incidentservice.service.AITrainingService trainingService) {
         this.incidentService = incidentService;
+        this.trainingService = trainingService;
     }
+
 
     // Create
 
@@ -284,6 +291,51 @@ public class IncidentController {
                 request.getResolutionSummary()
         );
     }
+
+    @PostMapping("/{id}/resolve")
+    public IncidentResolutionResponse resolveIncident(
+            @PathVariable Long id,
+            @RequestBody ResolveIncidentRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication != null ? authentication.getName() : null;
+        return incidentService.resolveIncident(id, request, userEmail);
+    }
+
+    @GetMapping("/{id}/resolution")
+    public IncidentResolutionResponse getIncidentResolution(
+            @PathVariable Long id) {
+
+        return incidentService.getIncidentResolution(id);
+    }
+
+    @PostMapping("/{id}/convert-kb")
+    public com.secureops.incidentservice.dto.KBConversionResponse convertToKB(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        String authToken = null;
+        try {
+            org.springframework.web.context.request.ServletRequestAttributes attrs =
+                    (org.springframework.web.context.request.ServletRequestAttributes)
+                    org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                authToken = attrs.getRequest().getHeader("Authorization");
+            }
+        } catch (Exception ignored) {}
+
+        return incidentService.convertToKnowledgeArticle(id, authToken);
+    }
+
+    @PostMapping("/{id}/training")
+    public com.secureops.incidentservice.entity.AITrainingExample stageTrainingData(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String user = authentication != null ? authentication.getName() : "Analyst";
+        return trainingService.createTrainingExample(id, user);
+    }
+
+
     
     @GetMapping("/manager/queue")
     public List<Incident> getManagerIncidentQueue(

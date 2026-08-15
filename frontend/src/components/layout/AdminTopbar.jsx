@@ -15,13 +15,21 @@ import SecurityIcon from "@mui/icons-material/Security";
 import { useState, useEffect } from "react";
 import { getUnreadCount } from "../../services/notificationService";
 
+import { useAuth } from "../../contexts/AuthContext";
+import UserAvatar from "../common/UserAvatar";
+
 function AdminTopbar({
   onMenuClick,
   username = "Admin",
   role = "Admin",
 }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const displayName = user?.firstName
+    ? `${user.firstName} ${user.lastName ?? ""}`.trim()
+    : user?.username ?? username;
 
   useEffect(() => {
     getUnreadCount()
@@ -69,15 +77,13 @@ function AdminTopbar({
           }}
           onClick={() => navigate("/admin/profile")}
         >
-          <Avatar sx={{ bgcolor: "rgba(255,255,255,0.25)", color: "#fff", width: 36, height: 36, fontSize: 15, fontWeight: 700 }}>
-            {username.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
-          </Avatar>
+          <UserAvatar user={user} size={36} sx={{ bgcolor: "rgba(255,255,255,0.25)" }} />
           <Box sx={{ ml: 1 }}>
             <Typography variant="body2" fontWeight="bold" sx={{ color: "#fff", lineHeight: 1.2 }}>
-              {username}
+              {displayName}
             </Typography>
             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)" }}>
-              {role}
+              {user?.role ?? role}
             </Typography>
           </Box>
         </Box>

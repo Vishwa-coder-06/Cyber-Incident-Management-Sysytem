@@ -15,13 +15,21 @@ import SecurityIcon from "@mui/icons-material/Security";
 import { useState, useEffect } from "react";
 import { getUnreadCount } from "../../services/notificationService";
 
+import { useAuth } from "../../contexts/AuthContext";
+import UserAvatar from "../common/UserAvatar";
+
 function ManagerTopbar({
   onMenuClick,
   username = "Manager",
   role = "Incident Manager",
 }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const displayName = user?.firstName
+    ? `${user.firstName} ${user.lastName ?? ""}`.trim()
+    : user?.username ?? username;
 
   useEffect(() => {
     getUnreadCount()
@@ -65,15 +73,13 @@ function ManagerTopbar({
           }}
           onClick={() => navigate("/manager/profile")}
         >
-          <Avatar sx={{ bgcolor: "#8E6FF7", width: 36, height: 36, fontSize: 15, fontWeight: 700 }}>
-            {username.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
-          </Avatar>
+          <UserAvatar user={user} size={36} sx={{ bgcolor: "#8E6FF7" }} />
           <Box ml={1}>
             <Typography color="white" sx={{ lineHeight: 1.2, fontWeight: 600, fontSize: 14 }}>
-              {username}
+              {displayName}
             </Typography>
             <Typography variant="body2" sx={{ color: "#D1D5DB", fontSize: 12 }}>
-              {role}
+              {user?.role ?? role}
             </Typography>
           </Box>
         </Box>

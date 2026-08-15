@@ -26,6 +26,11 @@ export const uploadMyPhoto = async (file) => {
   return response.data;
 };
 
+export const getProfileStats = async () => {
+  const response = await api.get("/api/dashboard/profile/stats");
+  return response.data;
+};
+
 // ─── Admin - User Management ──────────────────────────────────────────────────
 
 export const getAllUsers = async () => {

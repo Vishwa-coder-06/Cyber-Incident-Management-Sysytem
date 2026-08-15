@@ -35,12 +35,12 @@ public class AIService {
 
         System.out.println("[AI-SERVICE] analyzeIncident called");
         System.out.println("[AI-SERVICE] incidentDescription: " + request.getIncidentDescription());
-        System.out.println("[AI-SERVICE] severity: " + request.getSeverity());
         System.out.println("[AI-SERVICE] Calling Python at: " + mlServiceUrl + "/predict");
 
         PythonAIRequest mlRequest = new PythonAIRequest(request.getIncidentDescription());
 
-        System.out.println("[AI-SERVICE] Python request body: {\"description\": \"" + request.getIncidentDescription() + "\"}");
+        System.out.println("[AI-SERVICE] Python request body: {\"description\": \""
+                + request.getIncidentDescription() + "\"}");
 
         PythonAIResponse mlResponse;
         try {
@@ -67,7 +67,19 @@ public class AIService {
         System.out.println("[AI-SERVICE] rootCause=" + mlResponse.rootCause);
         System.out.println("[AI-SERVICE] immediateAdvice=" + mlResponse.immediateAdvice);
         System.out.println("[AI-SERVICE] recommendedPlaybookTitle=" + mlResponse.recommendedPlaybookTitle);
-        System.out.println("[AI-SERVICE] similarIncidents count=" + (mlResponse.similarIncidents != null ? mlResponse.similarIncidents.size() : 0));
+        System.out.println("[AI-SERVICE] similarIncidents count="
+                + (mlResponse.similarIncidents != null ? mlResponse.similarIncidents.size() : 0));
+
+        // ===================================================================
+        // SEVERITY RULE ENGINE
+        // NOTE: The Python model only predicts attackType (category).
+        // Severity is NOT ML-predicted — it is derived from attackType using
+        // an explicit rule table. This is intentionally kept separate from
+        // analyst-confirmed (final) severity.
+        // ===================================================================
+        String derivedSeverity = deriveSeverityFromAttackType(mlResponse.attackType);
+        System.out.println("[AI-SERVICE] derived aiSeverity (rule-based)="
+                + derivedSeverity + "  attackType=" + mlResponse.attackType);
 
         List<SimilarIncidentDTO> mappedSimilar = null;
         if (mlResponse.similarIncidents != null) {
@@ -83,7 +95,7 @@ public class AIService {
         AIResponse aiResponse = new AIResponse(
                 mlResponse.attackType,
                 mlResponse.confidence,
-                request.getSeverity(),
+                derivedSeverity,               // rule-derived aiSeverity — NOT echoed input, NOT ML-predicted
                 mlResponse.recommendedPlaybookTitle,
                 mlResponse.rootCause,
                 mlResponse.immediateAdvice,
@@ -96,25 +108,39 @@ public class AIService {
     }
 
 
-    // Request sent to Python
+    // =========================================================================
+    // SEVERITY RULE ENGINE
+    // Maps AI-predicted attackType → aiSeverity using a rule table.
+    // Only attackType is predicted by the Python model.
+    // Severity here is rule-inferred, not ML-predicted.
+    // =========================================================================
+    private static String deriveSeverityFromAttackType(String attackType) {
+        if (attackType == null) return "MEDIUM";
+        return switch (attackType.trim()) {
+            case "Ransomware"        -> "CRITICAL";
+            case "DDoS"              -> "HIGH";
+            case "Phishing"          -> "HIGH";
+            case "Lateral Movement"  -> "HIGH";
+            case "Insider Threat"    -> "MEDIUM";
+            default                  -> "MEDIUM";
+        };
+    }
+
+
+    // Request sent to Python ML service
     private record PythonAIRequest(
             String description
     ) {}
 
 
-    // Response received from Python
+    // Response received from Python ML service
     private static class PythonAIResponse {
 
         public String attackType;
-
         public Double confidence;
-
         public String rootCause;
-
         public String immediateAdvice;
-
         public String recommendedPlaybookTitle;
-
         public List<PythonSimilarIncident> similarIncidents;
     }
 

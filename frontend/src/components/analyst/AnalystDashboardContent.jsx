@@ -126,25 +126,40 @@ function AnalystDashboardContent() {
           {incidents.length === 0 ? (
             <Typography sx={{ color: "#9CA3AF" }}>No active incidents.</Typography>
           ) : (
-            incidents.map((incident) => (
-              <Box key={incident.incidentId ?? incident.id} mb={2}>
-                <Typography sx={{ color: "#9CA3AF" }} fontSize={13}>
-                  #INC-{incident.incidentId ?? incident.id}
-                </Typography>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
-                  <Typography sx={{ color: "#9CA3AF", fontWeight: 600 }}>
-                    {incident.title}
+            incidents.map((incident) => {
+              const id = incident.incidentId ?? incident.id;
+              return (
+                <Box
+                  key={id}
+                  mb={2}
+                  onClick={() => navigate(`/analyst/incident-details/${id}`, { state: { incidentId: id, incidentTitle: incident.title } })}
+                  sx={{
+                    cursor: "pointer",
+                    p: 1.5,
+                    borderRadius: 1.5,
+                    "&:hover": { bgcolor: "#343434" },
+                    transition: "background 0.2s",
+                  }}
+                >
+                  <Typography sx={{ color: "#9CA3AF" }} fontSize={13}>
+                    #INC-{id}
                   </Typography>
-                  <Chip
-                    label={incident.severity}
-                    size="small"
-                    sx={{ bgcolor: severityColor(incident.severity), color: "#FFFFFF", fontWeight: 600 }}
-                  />
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+                    <Typography sx={{ color: "#FFFFFF", fontWeight: 600 }}>
+                      {incident.title}
+                    </Typography>
+                    <Chip
+                      label={incident.severity}
+                      size="small"
+                      sx={{ bgcolor: severityColor(incident.severity), color: "#FFFFFF", fontWeight: 600 }}
+                    />
+                  </Box>
+                  <Divider sx={{ mt: 1.5, bgcolor: "#444" }} />
                 </Box>
-                <Divider sx={{ mt: 2, bgcolor: "#444" }} />
-              </Box>
-            ))
+              );
+            })
           )}
+
         </Paper>
       </Grid>
 

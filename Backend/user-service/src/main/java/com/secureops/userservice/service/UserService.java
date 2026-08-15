@@ -186,84 +186,71 @@ public class UserService {
                                         "User Not Found"));
 
         if (file.isEmpty()) {
-            throw new RuntimeException(
-                    "Please select an image");
+            throw new RuntimeException("Please select an image file.");
         }
 
-        String originalName =
-                file.getOriginalFilename();
-
-        String extension = "";
-
-        if (originalName != null &&
-                originalName.contains(".")) {
-
-            extension =
-                    originalName.substring(
-                            originalName.lastIndexOf("."));
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new RuntimeException("File size exceeds 5MB limit.");
         }
 
-        String fileName =
-                user.getUserId() + extension;
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.startsWith("image/")) {
+            throw new RuntimeException("Only image files (JPEG, PNG, WEBP) are allowed.");
+        }
 
-        Path uploadPath =
-                Paths.get("uploads/profiles");
+        String originalName = file.getOriginalFilename();
+        String extension = ".jpg";
 
+        if (originalName != null && originalName.contains(".")) {
+            extension = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
+        }
+
+        if (!List.of(".jpg", ".jpeg", ".png", ".webp", ".gif").contains(extension)) {
+            throw new RuntimeException("Invalid image format. Allowed formats: JPG, PNG, WEBP, GIF.");
+        }
+
+        String fileName = user.getUserId() + extension;
+        Path uploadPath = Paths.get("uploads/profiles");
         Files.createDirectories(uploadPath);
 
-        Path filePath =
-                uploadPath.resolve(fileName);
-
-        Files.write(
-                filePath,
-                file.getBytes());
+        Path filePath = uploadPath.resolve(fileName);
+        Files.write(filePath, file.getBytes());
 
         user.setProfilePhoto(fileName);
-
         userRepository.save(user);
 
         return fileName;
     }
-    
-    public ResponseEntity<byte[]> getProfilePhoto(
-            String email)
-            throws IOException {
 
-        User user =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "User Not Found"));
+    public ResponseEntity<byte[]> getProfilePhoto(String email) throws IOException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User Not Found"));
+        return servePhotoFile(user.getProfilePhoto());
+    }
 
-        if (user.getProfilePhoto() == null) {
+    public ResponseEntity<byte[]> getProfilePhotoByUserId(Long userId) throws IOException {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null || user.getProfilePhoto() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return servePhotoFile(user.getProfilePhoto());
+    }
 
-            return ResponseEntity.notFound()
-                    .build();
+    private ResponseEntity<byte[]> servePhotoFile(String photoFileName) throws IOException {
+        if (photoFileName == null || photoFileName.isBlank()) {
+            return ResponseEntity.notFound().build();
         }
 
-        Path path =
-                Paths.get("uploads/profiles")
-                        .resolve(user.getProfilePhoto());
-
+        Path path = Paths.get("uploads/profiles").resolve(photoFileName);
         if (!Files.exists(path)) {
-
-            return ResponseEntity.notFound()
-                    .build();
+            return ResponseEntity.notFound().build();
         }
 
-        byte[] image =
-                Files.readAllBytes(path);
-
-        String contentType =
-                Files.probeContentType(path);
+        byte[] image = Files.readAllBytes(path);
+        String contentType = Files.probeContentType(path);
 
         return ResponseEntity.ok()
-                .header(
-                        "Content-Type",
-                        contentType != null
-                                ? contentType
-                                : "image/jpeg")
+                .header("Content-Type", contentType != null ? contentType : "image/jpeg")
                 .body(image);
     }
     

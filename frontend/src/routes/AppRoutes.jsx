@@ -20,6 +20,7 @@ import Notifications from "../pages/reporter/Notifications";
 
 import AnalystDashboard from "../pages/analyst/AnalystDashboard";
 import AssignedIncidents from "../pages/analyst/AssignedIncidents";
+import AnalystIncidentDetails from "../pages/analyst/AnalystIncidentDetails";
 import Investigation from "../pages/analyst/Investigation";
 import Resolution from "../pages/analyst/Resolution";
 import KnowledgeBase from "../pages/analyst/KnowledgeBase";
@@ -62,6 +63,7 @@ function AppRoutes() {
     <Route path="/reporter/ai-analysis" element={<AIAnalysis />} />
     <Route path="/reporter/my-incidents" element={<MyIncidents />} />
     <Route path="/reporter/incident-details" element={<IncidentDetails />} />
+    <Route path="/reporter/incident-details/:incidentId" element={<IncidentDetails />} />
     <Route path="/reporter/notifications" element={<Notifications />} />
     <Route path="/reporter/profile" element={<Profile />}  />
 </Route>
@@ -69,12 +71,19 @@ function AppRoutes() {
 <Route element={<AnalystLayout />}>
     <Route path="/analyst/dashboard" element={<AnalystDashboard/>} />
     <Route path="/analyst/assigned-incidents" element={<AssignedIncidents />} />
+    <Route path="/analyst/incidents" element={<AssignedIncidents />} />
+    <Route path="/analyst/incident-details" element={<AnalystIncidentDetails />} />
+    <Route path="/analyst/incident-details/:incidentId" element={<AnalystIncidentDetails />} />
     <Route path="/analyst/investigation" element={<Investigation />} />
+    <Route path="/analyst/investigation/:incidentId" element={<Investigation />} />
     <Route path="/analyst/resolution" element={<Resolution />} />
+    <Route path="/analyst/resolution/:incidentId" element={<Resolution />} />
     <Route path="/analyst/knowledge-base" element={<KnowledgeBase />} />
     <Route path="/analyst/article-view" element={<ArticleView />} />
+    <Route path="/analyst/article-view/:articleId" element={<ArticleView />} />
     <Route path="/analyst/profile" element={<SharedProfile />} />
 </Route>
+
 
 <Route element={<AdminLayout />}>
     <Route path="/admin/dashboard" element={<AdminDashboard />} />

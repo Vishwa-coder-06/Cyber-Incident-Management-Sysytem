@@ -576,4 +576,119 @@ public class DashboardController {
                 .retrieve()
                 .bodyToMono(Object.class);
     }
+
+    @GetMapping("/api/dashboard/profile/stats")
+    public Mono<com.secureops.gateway.dto.ProfileStatsResponse> getProfileStats(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+
+        return webClient.get()
+                .uri("http://localhost:8081/api/users/me")
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .flatMap(user -> {
+                    String role = String.valueOf(user.getOrDefault("role", "REPORTER")).toUpperCase();
+                    Long userId = user.get("userId") != null ? ((Number) user.get("userId")).longValue() : null;
+
+                    if ("REPORTER".equals(role)) {
+                        return webClient.get()
+                                .uri("http://localhost:8082/api/incidents")
+                                .header(HttpHeaders.AUTHORIZATION, token)
+                                .retrieve()
+                                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                                .map(list -> {
+                                    long totalReported = list.stream()
+                                            .filter(i -> i.get("reportedBy") != null && String.valueOf(i.get("reportedBy")).equalsIgnoreCase(String.valueOf(userId)))
+                                            .count();
+                                    long resolvedReported = list.stream()
+                                            .filter(i -> i.get("reportedBy") != null && String.valueOf(i.get("reportedBy")).equalsIgnoreCase(String.valueOf(userId)))
+                                            .filter(i -> {
+                                                String st = String.valueOf(i.getOrDefault("status", "")).toUpperCase();
+                                                return "RESOLVED".equals(st) || "CLOSED".equals(st) || "READY_TO_CLOSE".equals(st);
+                                            })
+                                            .count();
+                                    return new com.secureops.gateway.dto.ProfileStatsResponse(
+                                            "REPORTER",
+                                            totalReported,
+                                            "Reported Incidents",
+                                            resolvedReported,
+                                            "Resolved Reports"
+                                    );
+                                })
+                                .onErrorReturn(new com.secureops.gateway.dto.ProfileStatsResponse("REPORTER", 0, "Reported Incidents", 0, "Resolved Reports"));
+                    } else if ("ANALYST".equals(role)) {
+                        return webClient.get()
+                                .uri("http://localhost:8082/api/incidents")
+                                .header(HttpHeaders.AUTHORIZATION, token)
+                                .retrieve()
+                                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                                .map(list -> {
+                                    long totalAssigned = list.stream()
+                                            .filter(i -> i.get("assignedTo") != null && String.valueOf(i.get("assignedTo")).equalsIgnoreCase(String.valueOf(userId)))
+                                            .count();
+                                    long resolvedAssigned = list.stream()
+                                            .filter(i -> i.get("assignedTo") != null && String.valueOf(i.get("assignedTo")).equalsIgnoreCase(String.valueOf(userId)))
+                                            .filter(i -> {
+                                                String st = String.valueOf(i.getOrDefault("status", "")).toUpperCase();
+                                                return "RESOLVED".equals(st) || "CLOSED".equals(st) || "READY_TO_CLOSE".equals(st);
+                                            })
+                                            .count();
+                                    return new com.secureops.gateway.dto.ProfileStatsResponse(
+                                            "ANALYST",
+                                            totalAssigned,
+                                            "Assigned Incidents",
+                                            resolvedAssigned,
+                                            "Resolved Incidents"
+                                    );
+                                })
+                                .onErrorReturn(new com.secureops.gateway.dto.ProfileStatsResponse("ANALYST", 0, "Assigned Incidents", 0, "Resolved Incidents"));
+                    } else if ("MANAGER".equals(role)) {
+                        return webClient.get()
+                                .uri("http://localhost:8082/api/incidents")
+                                .header(HttpHeaders.AUTHORIZATION, token)
+                                .retrieve()
+                                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                                .map(list -> {
+                                    long assignedCount = list.stream()
+                                            .filter(i -> i.get("assignedTo") != null || i.get("assignedAnalyst") != null)
+                                            .count();
+                                    long unassignedCount = list.stream()
+                                            .filter(i -> i.get("assignedTo") == null && i.get("assignedAnalyst") == null)
+                                            .count();
+                                    return new com.secureops.gateway.dto.ProfileStatsResponse(
+                                            "MANAGER",
+                                            assignedCount,
+                                            "Assigned",
+                                            unassignedCount,
+                                            "Unassigned"
+                                    );
+                                })
+                                .onErrorReturn(new com.secureops.gateway.dto.ProfileStatsResponse("MANAGER", 0, "Assigned", 0, "Unassigned"));
+                    } else { // ADMIN
+                        Mono<List<Map<String, Object>>> playbooksMono = webClient.get()
+                                .uri("http://localhost:8085/api/articles/playbooks")
+                                .header(HttpHeaders.AUTHORIZATION, token)
+                                .retrieve()
+                                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                                .onErrorReturn(List.of());
+
+                        Mono<List<Map<String, Object>>> articlesMono = webClient.get()
+                                .uri("http://localhost:8085/api/articles")
+                                .header(HttpHeaders.AUTHORIZATION, token)
+                                .retrieve()
+                                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                                .onErrorReturn(List.of());
+
+                        return Mono.zip(playbooksMono, articlesMono)
+                                .map(tuple -> new com.secureops.gateway.dto.ProfileStatsResponse(
+                                        "ADMIN",
+                                        tuple.getT1().size(),
+                                        "Playbooks Added",
+                                        tuple.getT2().size(),
+                                        "Knowledge Articles Added"
+                                ));
+                    }
+                })
+                .onErrorReturn(new com.secureops.gateway.dto.ProfileStatsResponse("USER", 0, "Primary", 0, "Secondary"));
+    }
 }

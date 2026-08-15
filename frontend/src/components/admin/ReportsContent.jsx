@@ -28,8 +28,14 @@ function ReportsContent() {
     return <Box display="flex" justifyContent="center" py={6}><CircularProgress /></Box>;
   }
 
-  const topSystems = Array.isArray(report?.topAffectedSystems) ? report.topAffectedSystems : [];
+  const topSystems = Array.isArray(report?.topAffectedSystems)
+    ? report.topAffectedSystems.filter((s) => {
+        const name = String(s?.system ?? s?.name ?? s?.[0] ?? "").trim();
+        return name && name.toLowerCase() !== "null" && name.toLowerCase() !== "undefined";
+      })
+    : [];
   const maxSys = Math.max(...topSystems.map((s) => s.count ?? s[1] ?? 0), 1);
+
 
   return (
     <Grid container spacing={3}>

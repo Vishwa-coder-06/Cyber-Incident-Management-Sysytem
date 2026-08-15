@@ -50,6 +50,8 @@ export const AuthProvider = ({ children }) => {
       email: meData?.email ?? data.email ?? email,
       firstName: meData?.firstName ?? null,
       lastName: meData?.lastName ?? null,
+      profilePhoto: meData?.profilePhoto ?? null,
+      updatedAt: Date.now(),
     };
 
     localStorage.setItem(
@@ -60,6 +62,33 @@ export const AuthProvider = ({ children }) => {
     setUser(loggedInUser);
 
     return data;
+  };
+
+  const refreshUser = async () => {
+    if (!token) return;
+    try {
+      const meRes = await api.get("/api/users/me");
+      if (meRes.data) {
+        const d = meRes.data;
+        const updated = {
+          ...user,
+          userId: d.userId ?? user?.userId,
+          email: d.email ?? user?.email,
+          firstName: d.firstName ?? user?.firstName,
+          lastName: d.lastName ?? user?.lastName,
+          username: `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || d.email || user?.username,
+          role: d.role ?? user?.role,
+          department: d.department ?? user?.department,
+          profilePhoto: d.profilePhoto ?? user?.profilePhoto,
+          updatedAt: Date.now(),
+        };
+        localStorage.setItem("user", JSON.stringify(updated));
+        setUser(updated);
+        return updated;
+      }
+    } catch (e) {
+      console.warn("Could not refresh user profile:", e);
+    }
   };
 
   const logout = () => {
@@ -78,6 +107,7 @@ export const AuthProvider = ({ children }) => {
         token,
         login,
         logout,
+        refreshUser,
         isAuthenticated: !!token,
       }}
     >

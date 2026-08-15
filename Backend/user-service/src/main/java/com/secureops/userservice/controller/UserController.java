@@ -151,6 +151,14 @@ public class UserController {
         return userService.getProfilePhoto(
                 authentication.getName());
     }
+
+    @GetMapping("/{id}/photo")
+    public ResponseEntity<byte[]> getUserPhotoById(
+            @PathVariable Long id)
+            throws IOException {
+
+        return userService.getProfilePhotoByUserId(id);
+    }
     
     @GetMapping("/search")
     public List<UserResponse> searchUsers(

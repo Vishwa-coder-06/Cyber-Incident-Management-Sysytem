@@ -1,19 +1,31 @@
 import { useState, useEffect } from "react";
 import {
-  Box, Grid, Paper, Typography, Chip, Stack, Button, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  Chip,
+  Stack,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Divider,
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
-import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloseIcon from "@mui/icons-material/Close";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { getArticleById, getArticles, getPlaybooks } from "../../services/knowledgeService";
 
 function ArticleViewContent() {
+  const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const articleId = location.state?.articleId;
+  const articleId = params.articleId || location.state?.articleId;
 
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,23 +76,33 @@ function ArticleViewContent() {
   const closePlaybookDialog = () => setPlaybookDialog({ open: false, playbook: null, loading: false });
 
   if (loading) {
-    return <Box display="flex" justifyContent="center" py={6}><CircularProgress /></Box>;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" py={10} gap={2}>
+        <CircularProgress size={32} sx={{ color: "#2563EB" }} />
+        <Typography sx={{ color: "#9CA3AF" }}>Loading knowledge base article...</Typography>
+      </Box>
+    );
   }
 
   if (!article) {
     return (
-      <Box py={4} textAlign="center">
-        <Typography sx={{ color: "#9CA3AF", mb: 2 }}>
-          No article selected or available.
-        </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/analyst/knowledge-base")}
-          sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none" }}
-        >
-          Go to Knowledge Base
-        </Button>
+      <Box py={6} textAlign="center" maxWidth={600} mx="auto">
+        <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 4, borderRadius: 2 }}>
+          <Typography variant="h6" sx={{ color: "#FFFFFF", mb: 2 }}>
+            Article Not Found
+          </Typography>
+          <Typography sx={{ color: "#9CA3AF", mb: 3 }}>
+            The requested knowledge base article is not available.
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate("/analyst/knowledge-base")}
+            sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none" }}
+          >
+            Go to Knowledge Base
+          </Button>
+        </Paper>
       </Box>
     );
   }
@@ -94,7 +116,7 @@ function ArticleViewContent() {
     ? [article.category]
     : [];
 
-  const relatedPlaybookTitle = article.playbookTitle ?? article.references?.[0] ?? "General Incident Response Playbook";
+  const specificPlaybook = article.playbookTitle || (Array.isArray(article.references) && article.references.length > 0 ? article.references[0] : null);
 
   return (
     <>
@@ -110,53 +132,78 @@ function ArticleViewContent() {
       </Box>
 
       <Grid container spacing={3}>
-        {/* LEFT */}
+        {/* LEFT COLUMN: Content */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <Paper sx={{ bgcolor: "#2D2D2D", p: 3, borderRadius: 2 }}>
+          <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3.5, borderRadius: 2 }}>
             <Typography variant="h4" sx={{ color: "#FFFFFF", fontWeight: 700, mb: 2 }}>
               {article.title}
             </Typography>
 
-            <Stack direction="row" spacing={1} mb={4}>
+            <Stack direction="row" spacing={1} mb={3} flexWrap="wrap" gap={1}>
               {tags.map((tag) => (
-                <Chip key={tag} label={tag} sx={{ color: "#fff", bgcolor: "#1565C0" }} />
+                <Chip key={tag} label={tag} sx={{ color: "#fff", bgcolor: "#1565C0", fontWeight: 600 }} />
               ))}
             </Stack>
 
-            {/* Overview */}
+            <Divider sx={{ borderColor: "#444", mb: 3 }} />
+
+            {/* Overview / Description */}
             <Typography variant="h6" sx={{ color: "#ffffff", fontWeight: 700, mb: 1 }}>
-              Overview
+              Incident Overview & Root Cause
             </Typography>
-            <Typography sx={{ color: "#CFCFCF", mb: 4, lineHeight: 1.7 }}>
+            <Typography sx={{ color: "#E5E7EB", mb: 3.5, lineHeight: 1.7, fontSize: 15, whiteSpace: "pre-wrap" }}>
               {article.description ?? article.summary ?? "No description available."}
             </Typography>
 
-            {/* Solution / Content */}
+            {/* Solution Details / Ordered Steps */}
             {(article.solution || article.content) && (
               <>
-                <Typography variant="h6" sx={{ color: "#fff", mb: 1, fontWeight: 700 }}>
-                  Solution Details
+                <Typography variant="h6" sx={{ color: "#fff", mb: 1.5, fontWeight: 700 }}>
+                  Remediation & Solution Steps
                 </Typography>
-                <Typography sx={{ color: "#CFCFCF", mb: 4, lineHeight: 1.7 }}>
-                  {article.solution ?? article.content}
+                <Paper elevation={0} sx={{ bgcolor: "#1E1E1E", p: 2.5, borderRadius: 2, mb: 3.5, border: "1px solid #333" }}>
+                  <Typography sx={{ color: "#D1D5DB", lineHeight: 1.8, fontSize: 14, whiteSpace: "pre-wrap" }}>
+                    {article.solution ?? article.content}
+                  </Typography>
+                </Paper>
+              </>
+            )}
+
+            {/* Prevention & Lessons Learned */}
+            {article.prevention && (
+              <>
+                <Typography variant="h6" sx={{ color: "#fff", mb: 1, fontWeight: 700 }}>
+                  Prevention & Lessons Learned
+                </Typography>
+                <Typography sx={{ color: "#E5E7EB", mb: 3.5, lineHeight: 1.7, fontSize: 15, whiteSpace: "pre-wrap" }}>
+                  {article.prevention}
                 </Typography>
               </>
             )}
 
-            {/* Response Steps */}
-            {steps.length > 0 && (
+            {/* Legacy Structured Steps if present */}
+            {steps.length > 0 && !article.solution && (
               <>
-                <Typography variant="h6" sx={{ color: "#fff", mb: 3, fontWeight: 700 }}>
+                <Typography variant="h6" sx={{ color: "#fff", mb: 2, fontWeight: 700 }}>
                   Response Steps
                 </Typography>
-
                 {steps.map((step, index) => (
-                  <Box key={index} sx={{ display: "flex", mb: 3 }}>
-                    <Box sx={{
-                      width: 32, height: 32, borderRadius: "50%", bgcolor: "#1565C0",
-                      color: "#fff", display: "flex", justifyContent: "center",
-                      alignItems: "center", mr: 2, fontWeight: 700, flexShrink: 0,
-                    }}>
+                  <Box key={index} sx={{ display: "flex", mb: 2, alignItems: "flex-start", gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        bgcolor: "#1565C0",
+                        color: "#fff",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        flexShrink: 0,
+                      }}
+                    >
                       {index + 1}
                     </Box>
                     <Box>
@@ -174,156 +221,131 @@ function ArticleViewContent() {
           </Paper>
         </Grid>
 
-        {/* RIGHT */}
+        {/* RIGHT COLUMN: Metadata & Related Playbook */}
         <Grid size={{ xs: 12, md: 4 }}>
-          <Paper sx={{ bgcolor: "#2D2D2D", p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant="h6" sx={{ color: "#fff", fontWeight: 700, mb: 3 }}>
-              Article Details
+          {/* Article Details Card */}
+          <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2, mb: 3 }}>
+            <Typography variant="h6" sx={{ color: "#fff", fontWeight: 700, mb: 2.5 }}>
+              Article Information
             </Typography>
 
             {[
-              { label: "Author", value: article.createdBy ?? article.author ?? "System" },
-              { label: "Category", value: article.category ?? "General" },
+              { label: "Author / Analyst", value: article.createdBy ?? article.author ?? "Security Analyst" },
+              { label: "Category", value: article.category ?? "General Security" },
               { label: "Severity", value: article.severity ?? "—" },
               { label: "Status", value: article.status ?? "PUBLISHED" },
               { label: "Views", value: article.viewCount ?? 0 },
+              { label: "Published Date", value: article.createdAt ? new Date(article.createdAt).toLocaleDateString() : "Recent" },
             ].map(({ label, value }) => (
-              <Box key={label} mb={2}>
-                <Typography sx={{ color: "#888", fontSize: 13 }}>{label}</Typography>
-                <Typography sx={{ color: "#fff", fontWeight: 600 }}>{value}</Typography>
+              <Box key={label} mb={1.8}>
+                <Typography sx={{ color: "#9CA3AF", fontSize: 12 }}>{label}</Typography>
+                <Typography sx={{ color: "#FFFFFF", fontWeight: 600, fontSize: 14, mt: 0.2 }}>{value}</Typography>
               </Box>
             ))}
           </Paper>
 
-          <Paper sx={{ bgcolor: "#2D2D2D", p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight={700} mb={3} sx={{ color: "#fff" }}>
-              Related Playbook
-            </Typography>
-
-            <Box
-              onClick={() => handlePlaybookClick(relatedPlaybookTitle)}
-              sx={{
-                display: "flex", alignItems: "center", mb: 4, cursor: "pointer", p: 1, borderRadius: 1,
-                "&:hover": { bgcolor: "rgba(78, 161, 255, 0.1)" },
-                transition: "background 0.2s",
-              }}
-            >
-              <DescriptionIcon sx={{ color: "#4EA1FF", mr: 1 }} />
-              <Typography sx={{ color: "#4EA1FF", fontWeight: 600, textDecoration: "underline", textDecorationColor: "rgba(78, 161, 255, 0.4)" }}>
-                {relatedPlaybookTitle}
+          {/* Related Playbook — Render only if known */}
+          {specificPlaybook && (
+            <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2, mb: 3, border: "1px solid #3B82F6" }}>
+              <Typography variant="h6" fontWeight={700} mb={1.5} sx={{ color: "#fff" }}>
+                Related Playbook
               </Typography>
-            </Box>
+              <Typography sx={{ color: "#9CA3AF", fontSize: 13, mb: 2 }}>
+                Associated standard procedure recommended during incident response.
+              </Typography>
 
-            <Button fullWidth variant="contained"
-              startIcon={<EditIcon />}
-              onClick={() => navigate("/analyst/knowledge-base")}
-              sx={{ bgcolor: "#424242", textTransform: "none", "&:hover": { bgcolor: "#555" } }}
-            >
-              Back to KB List
-            </Button>
-          </Paper>
+              <Box
+                onClick={() => handlePlaybookClick(specificPlaybook)}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  mb: 2,
+                  cursor: "pointer",
+                  p: 1.5,
+                  borderRadius: 1.5,
+                  bgcolor: "#1E1E1E",
+                  border: "1px solid #444",
+                  "&:hover": { borderColor: "#60A5FA", bgcolor: "#252525" },
+                  transition: "all 0.2s",
+                }}
+              >
+                <DescriptionIcon sx={{ color: "#60A5FA", mr: 1.5 }} />
+                <Typography sx={{ color: "#60A5FA", fontWeight: 600, fontSize: 14 }}>
+                  {specificPlaybook}
+                </Typography>
+              </Box>
+            </Paper>
+          )}
         </Grid>
       </Grid>
 
-      {/* Playbook Details Dialog */}
+      {/* Playbook Details Modal */}
       <Dialog
         open={playbookDialog.open}
         onClose={closePlaybookDialog}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
             bgcolor: "#1F1F1F",
             color: "#FFFFFF",
-            backgroundImage: "none",
+            borderRadius: 2,
           }
         }}
       >
         <DialogTitle
           sx={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            bgcolor: "#1F1F1F",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             borderBottom: "1px solid #333",
-            px: 3, py: 2,
+            px: 3,
+            py: 2,
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#FFFFFF" }}>
-            {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title ?? "Playbook Details"}
-          </Typography>
-          <IconButton onClick={closePlaybookDialog}>
-            <CloseIcon sx={{ color: "#9CA3AF" }} />
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <DescriptionIcon sx={{ color: "#60A5FA" }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "#FFFFFF" }}>
+              {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title ?? "Playbook Details"}
+            </Typography>
+          </Box>
+          <IconButton onClick={closePlaybookDialog} sx={{ color: "#9CA3AF" }}>
+            <CloseIcon />
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ bgcolor: "#1F1F1F", px: 3, py: 2.5 }}>
+        <DialogContent sx={{ p: 3 }}>
           {playbookDialog.loading ? (
-            <Box display="flex" justifyContent="center" py={3}>
-              <CircularProgress size={28} />
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress size={30} sx={{ color: "#60A5FA" }} />
             </Box>
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {playbookDialog.playbook?.category && (
-                <Box>
-                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>CATEGORY</Typography>
-                  <Chip
-                    label={playbookDialog.playbook.category}
-                    size="small"
-                    sx={{ bgcolor: "#2563EB", color: "#FFF" }}
-                  />
-                </Box>
-              )}
+            <Box>
+              <Typography sx={{ color: "#9CA3AF", mb: 3, fontSize: 14 }}>
+                {playbookDialog.playbook?.description ?? "Standard response playbook procedure."}
+              </Typography>
 
-              {playbookDialog.playbook?.description && (
+              {Array.isArray(playbookDialog.playbook?.steps) && playbookDialog.playbook.steps.length > 0 ? (
                 <Box>
-                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>DESCRIPTION</Typography>
-                  <Typography sx={{ color: "#D1D5DB", lineHeight: 1.6 }}>
-                    {playbookDialog.playbook.description}
+                  <Typography variant="subtitle2" sx={{ color: "#FFFFFF", fontWeight: 700, mb: 2 }}>
+                    Playbook Execution Steps:
                   </Typography>
-                </Box>
-              )}
-
-              <Box>
-                <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 1 }}>CONTAINMENT STEPS</Typography>
-                {Array.isArray(playbookDialog.playbook?.steps) && playbookDialog.playbook.steps.length > 0 ? (
-                  playbookDialog.playbook.steps.map((step, idx) => (
-                    <Box key={idx} display="flex" gap={1.5} mb={1}>
-                      <Typography sx={{ color: "#42A5F5", fontWeight: 700, minWidth: 20 }}>{idx + 1}.</Typography>
-                      <Typography sx={{ color: "#FFFFFF", lineHeight: 1.5 }}>
-                        {typeof step === "string" ? step : step.name ?? step.title ?? JSON.stringify(step)}
+                  {playbookDialog.playbook.steps.map((step, idx) => (
+                    <Box key={idx} sx={{ display: "flex", gap: 1.5, mb: 1.5, p: 1.5, bgcolor: "#2B2B2B", borderRadius: 1.5 }}>
+                      <Chip label={idx + 1} size="small" sx={{ bgcolor: "#3B82F6", color: "#FFFFFF", fontWeight: 700, minWidth: 28 }} />
+                      <Typography sx={{ color: "#E5E7EB", fontSize: 14, alignSelf: "center" }}>
+                        {typeof step === "string" ? step : (step.name || step.description || step.title)}
                       </Typography>
                     </Box>
-                  ))
-                ) : typeof playbookDialog.playbook?.steps === "string" && playbookDialog.playbook.steps.trim() ? (
-                  playbookDialog.playbook.steps.split("\n").filter(Boolean).map((step, idx) => (
-                    <Box key={idx} display="flex" gap={1.5} mb={1}>
-                      <Typography sx={{ color: "#42A5F5", fontWeight: 700, minWidth: 20 }}>{idx + 1}.</Typography>
-                      <Typography sx={{ color: "#FFFFFF", lineHeight: 1.5 }}>{step}</Typography>
-                    </Box>
-                  ))
-                ) : (
-                  <Typography sx={{ color: "#9CA3AF" }}>
-                    {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title
-                      ? "No containment steps defined."
-                      : "Playbook details not available."}
-                  </Typography>
-                )}
-              </Box>
-
-              {playbookDialog.playbook?.updatedAt && (
-                <Typography sx={{ color: "#9CA3AF", fontSize: 12 }}>
-                  Last updated: {new Date(playbookDialog.playbook.updatedAt).toLocaleDateString()}
-                </Typography>
-              )}
+                  ))}
+                </Box>
+              ) : null}
             </Box>
           )}
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: "#1F1F1F", borderTop: "1px solid #333" }}>
-          <Button
-            variant="outlined"
-            onClick={closePlaybookDialog}
-            sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none" }}
-          >
+        <DialogActions sx={{ borderTop: "1px solid #333", px: 3, py: 2 }}>
+          <Button onClick={closePlaybookDialog} sx={{ color: "#9CA3AF", textTransform: "none" }}>
             Close
           </Button>
         </DialogActions>

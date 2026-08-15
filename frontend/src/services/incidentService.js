@@ -69,6 +69,55 @@ export const closeIncident = async (id, payload) => {
   return response.data;
 };
 
+export const resolveIncident = async (id, payload) => {
+  // payload: { resolutionSummary, resolutionSteps, rootCause, finalAttackType, finalSeverity, lessonsLearned }
+  const response = await api.post(`/api/incidents/${id}/resolve`, payload);
+  return response.data;
+};
+
+export const getIncidentResolution = async (id) => {
+  const response = await api.get(`/api/incidents/${id}/resolution`);
+  return response.data;
+};
+
+export const convertToKB = async (id) => {
+  const response = await api.post(`/api/incidents/${id}/convert-kb`);
+  return response.data;
+};
+
+export const addToTrainingData = async (id) => {
+  const response = await api.post(`/api/training/incident/${id}`);
+  return response.data;
+};
+
+export const getTrainingExamples = async () => {
+  const response = await api.get("/api/training");
+  return response.data;
+};
+
+export const getApprovedTrainingExamples = async () => {
+  const response = await api.get("/api/training/approved");
+  return response.data;
+};
+
+export const approveTrainingExample = async (id) => {
+  const response = await api.put(`/api/training/${id}/approve`);
+  return response.data;
+};
+
+export const getTrainingStatus = async () => {
+  const response = await api.get("/api/training/status");
+  return response.data;
+};
+
+export const retrainAIModel = async () => {
+  const response = await api.post("/api/training/retrain");
+  return response.data;
+};
+
+
+
+
 // ─── Manager ─────────────────────────────────────────────────────────────────
 
 export const getManagerQueue = async (params = {}) => {

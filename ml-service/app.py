@@ -354,12 +354,10 @@ def predict():
 
     except Exception as e:
 
-        print(
-            "ERROR:",
-            str(e)
-        )
+        print("ERROR:", str(e))
 
         return jsonify({
+
 
             "error":
                 "ML prediction failed",
@@ -368,6 +366,105 @@ def predict():
                 str(e)
 
         }), 500
+
+
+# =========================================================
+# TRAINING DATA INGESTION
+# =========================================================
+
+@app.route("/training-data", methods=["POST"])
+def add_training_data():
+    global historical_data, historical_vectors, similarity_vectorizer
+    try:
+        data = request.get_json(silent=True) or {}
+        description = data.get("description", "").strip()
+        category = data.get("category", "").strip()
+        root_cause = data.get("rootCause", data.get("root_cause", "")).strip()
+
+        import csv
+        with open(DATA_PATH, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+            writer.writerow([description, category, root_cause])
+
+        new_row = pd.DataFrame([{
+            "description": description,
+            "category": category,
+            "root_cause": root_cause
+        }])
+
+        # Update in-memory historical data and similarity vectors
+        historical_data = pd.concat([historical_data, new_row], ignore_index=True)
+        historical_vectors = similarity_vectorizer.fit_transform(historical_data["description"].fillna(""))
+
+
+        print(f"[ML] Training example appended. Total dataset size: {len(historical_data)}")
+
+        return jsonify({
+            "status": "SAVED",
+            "totalSamples": len(historical_data),
+            "message": "Training example appended to dataset successfully."
+        })
+
+    except Exception as e:
+        print("[ML ERROR] Failed to save training data:", str(e))
+        return jsonify({"error": "Failed to save training data", "message": str(e)}), 500
+
+
+# =========================================================
+# EXPLICIT MODEL RETRAINING (Admin Operation)
+# =========================================================
+
+@app.route("/retrain", methods=["POST"])
+def retrain_model():
+    global model, historical_data, historical_vectors, similarity_vectorizer
+    try:
+        from sklearn.pipeline import Pipeline
+        from sklearn.svm import SVC
+        import datetime
+
+        print("[ML] Starting explicit model retraining...")
+        df = pd.read_csv(DATA_PATH)
+        df["description"] = df["description"].fillna("")
+        df["category"] = df["category"].fillna("Unknown")
+
+        X = df["description"]
+        y = df["category"]
+
+        new_model = Pipeline([
+            ("tfidf", TfidfVectorizer(lowercase=True, stop_words="english", ngram_range=(1, 2))),
+            ("svm", SVC(probability=True, kernel="linear"))
+        ])
+
+        new_model.fit(X, y)
+
+        # Versioned backup
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        versioned_path = os.path.join(BASE_DIR, "model", f"incident_classifier_{timestamp}.pkl")
+        joblib.dump(new_model, versioned_path)
+
+        # Save as active model
+        joblib.dump(new_model, MODEL_PATH)
+
+        # Reload in memory
+        model = new_model
+        historical_data = df
+        historical_vectors = similarity_vectorizer.fit_transform(historical_data["description"].fillna(""))
+
+        classes = list(model.classes_)
+        print(f"[ML] Model retrained successfully with {len(df)} samples across {len(classes)} classes.")
+
+        return jsonify({
+            "status": "RETRAINED",
+            "samplesCount": len(df),
+            "classes": classes,
+            "modelBackup": f"incident_classifier_{timestamp}.pkl",
+            "message": "Model retrained and active model reloaded successfully."
+        })
+
+    except Exception as e:
+        print("[ML ERROR] Retraining failed:", str(e))
+        return jsonify({"error": "Retraining failed", "message": str(e)}), 500
+
 
 
 # =========================================================

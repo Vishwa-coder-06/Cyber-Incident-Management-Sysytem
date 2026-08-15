@@ -92,10 +92,15 @@ public interface IncidentRepository
     @Query("""
     	    SELECT i.affectedSystem, COUNT(i)
     	    FROM Incident i
+    	    WHERE i.affectedSystem IS NOT NULL
+    	      AND TRIM(i.affectedSystem) <> ''
+    	      AND LOWER(TRIM(i.affectedSystem)) <> 'null'
+    	      AND LOWER(TRIM(i.affectedSystem)) <> 'undefined'
     	    GROUP BY i.affectedSystem
     	    ORDER BY COUNT(i) DESC
     	""")
     	List<Object[]> countByAffectedSystem();
+
     	
     	long countByAssignedToAndStatusNot(
     	        Long analystId,

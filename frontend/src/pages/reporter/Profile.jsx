@@ -23,7 +23,7 @@ function Profile() {
         Manage your account and preferences
       </Typography>
 
-      <ProfileContent />
+      <ProfileContent accentColor="#166B37" />
     </Box>
   );
 }

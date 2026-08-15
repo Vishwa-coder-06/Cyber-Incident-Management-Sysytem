@@ -23,12 +23,13 @@ function AdminDashboardContent() {
     { title: "Total users",        value: data?.totalUsers ?? "—",       color: "#3B82F6" },
     { title: "Active playbooks",   value: data?.activePlaybooks ?? "—",  color: "#22C55E" },
     { title: "KB articles",        value: data?.kbArticles ?? "—",       color: "#A855F7" },
-    { title: "Audit events today", value: data?.auditCount ?? "—",       color: "#FACC15" },
+    { title: "Audit events today", value: data?.auditEventsToday ?? data?.auditCount ?? "—", color: "#FACC15" },
   ];
 
   const chart = Array.isArray(data?.incidentTrend) ? data.incidentTrend : [];
-  const audits = Array.isArray(data?.recentAudits) ? data.recentAudits : [];
+  const audits = Array.isArray(data?.recentAuditEvents) ? data.recentAuditEvents : (Array.isArray(data?.recentAudits) ? data.recentAudits : []);
   const maxCount = Math.max(...chart.map((c) => c.count ?? c.value ?? 0), 1);
+
 
   return (
     <Grid container spacing={3}>

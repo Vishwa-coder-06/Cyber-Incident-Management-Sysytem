@@ -15,15 +15,21 @@ import {
   IconButton,
 } from "@mui/material";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import CloseIcon from "@mui/icons-material/Close";
-import { useLocation } from "react-router-dom";
-import { getReporterIncidentDetails } from "../../services/incidentService";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { getReporterIncidentDetails, getIncidentResolution } from "../../services/incidentService";
 import { getPlaybooks } from "../../services/knowledgeService";
 
 function IncidentDetailsContent() {
   const location = useLocation();
-  const incidentId = location.state?.incidentId;
+  const params = useParams();
+  const navigate = useNavigate();
+  const incidentId = params.incidentId || location.state?.incidentId;
   const [data, setData] = useState(null);
+  const [resolution, setResolution] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Playbook dialog
@@ -34,8 +40,19 @@ function IncidentDetailsContent() {
       setLoading(false);
       return;
     }
+    setLoading(true);
     getReporterIncidentDetails(incidentId)
-      .then(setData)
+      .then((inc) => {
+        setData(inc);
+        const status = (inc?.status || "").toUpperCase();
+        if (status === "RESOLVED" || status === "CLOSED") {
+          getIncidentResolution(incidentId)
+            .then(setResolution)
+            .catch(() => setResolution(null));
+        } else {
+          setResolution(null);
+        }
+      })
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [incidentId]);
@@ -63,22 +80,28 @@ function IncidentDetailsContent() {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" py={6}>
-        <CircularProgress />
+        <CircularProgress size={32} sx={{ color: "#2563EB" }} />
       </Box>
     );
   }
 
   if (!incidentId || !data) {
     return (
-      <Typography sx={{ color: "#9CA3AF", py: 4 }}>
-        No incident selected. Navigate here from the incidents list.
-      </Typography>
+      <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 4, borderRadius: 2, textAlign: "center" }}>
+        <Typography variant="h6" sx={{ color: "#FFFFFF", mb: 1 }}>
+          No Incident Selected
+        </Typography>
+        <Typography sx={{ color: "#9CA3AF" }}>
+          Please select an incident from your submitted incidents list.
+        </Typography>
+      </Paper>
     );
   }
 
   const timeline = data.timeline ?? [];
   const analysis = data.analysis ?? {};
   const playbookTitle = analysis.recommendedPlaybookTitle ?? "No playbook assigned";
+  const isResolved = (data.status || "").toUpperCase() === "RESOLVED" || (data.status || "").toUpperCase() === "CLOSED";
 
   const severityColor = (sev) => {
     const s = (sev || "").toUpperCase();
@@ -90,11 +113,46 @@ function IncidentDetailsContent() {
 
   return (
     <>
+      {/* RESOLUTION BANNER IF RESOLVED */}
+      {isResolved && (
+        <Paper
+          elevation={0}
+          sx={{
+            bgcolor: "#143320",
+            border: "1px solid #1E6B3C",
+            borderRadius: 2,
+            p: 2.5,
+            mb: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
+          <Box display="flex" alignItems="center" gap={2}>
+            <TaskAltIcon sx={{ color: "#4ADE80", fontSize: 32 }} />
+            <Box>
+              <Typography sx={{ color: "#4ADE80", fontWeight: 700, fontSize: 16 }}>
+                Incident Resolved & Closed
+              </Typography>
+              <Typography sx={{ color: "#A7F3D0", fontSize: 13 }}>
+                This incident has been fully investigated and resolved by Security Operations.
+              </Typography>
+            </Box>
+          </Box>
+
+          <Chip
+            icon={<CheckCircleIcon sx={{ "&&": { color: "#22C55E" } }} />}
+            label="RESOLVED & CLOSED"
+            sx={{ bgcolor: "#064E3B", color: "#4ADE80", fontWeight: 700, px: 1 }}
+          />
+        </Paper>
+      )}
+
       <Grid container spacing={3}>
-
-        {/* LEFT */}
+        {/* LEFT COLUMN */}
         <Grid size={{ xs: 12, md: 7 }}>
-
           {/* Incident Information */}
           <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2, mb: 3 }}>
             <Box display="flex" justifyContent="space-between" mb={3}>
@@ -109,48 +167,129 @@ function IncidentDetailsContent() {
             </Box>
 
             <Info title="Incident ID" value={`#INC-${data.incidentId ?? data.id}`} />
-            <Info title="Affected system" value={data.affectedSystem ?? "—"} />
-            <Info title="Reported by" value={data.reportedByName ?? data.reportedBy ?? "—"} />
-            <Info title="Date reported" value={data.incidentDateTime ? new Date(data.incidentDateTime).toLocaleString() : "—"} />
-            <Info title="Status" value={data.status ?? "—"} color="#42A5F5" />
-            <Info title="Assigned to" value={data.assignedToName ?? data.assignedTo ?? "Not assigned"} />
+            <Info title="Title" value={data.title ?? "—"} />
+            <Info title="Affected System" value={data.affectedSystem ?? "—"} />
+            <Info title="Reported By" value={data.reportedByName ?? data.reportedBy ?? "—"} />
+            <Info title="Date Reported" value={data.incidentDateTime ? new Date(data.incidentDateTime).toLocaleString() : "—"} />
+            <Info title="Status" value={data.status ?? "—"} color={isResolved ? "#4ADE80" : "#42A5F5"} />
+            <Info title="Assigned Analyst" value={data.assignedToName ?? data.assignedTo ?? "Unassigned"} />
           </Paper>
 
           {/* Description */}
-          <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2 }}>
+          <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2, mb: 3 }}>
             <Typography variant="h6" mb={2} sx={{ color: "#FFFFFF", fontWeight: 600 }}>
-              Description
+              Original Incident Description
             </Typography>
-            <Typography sx={{ color: "#FFFFFF" }} lineHeight={1.8}>
+            <Typography sx={{ color: "#E5E7EB" }} lineHeight={1.8}>
               {data.description ?? "No description provided."}
             </Typography>
           </Paper>
+
+          {/* RESOLUTION DETAILS SECTION FOR REPORTER (READ-ONLY) */}
+          {isResolved && resolution && (
+            <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2, mb: 3, border: "1px solid #16A34A" }}>
+              <Typography variant="h6" sx={{ color: "#4ADE80", fontWeight: 700, mb: 2 }}>
+                Resolution Details
+              </Typography>
+
+              {resolution.finalAttackType && (
+                <Box mb={2}>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>FINAL CONFIRMED ATTACK TYPE</Typography>
+                  <Chip label={resolution.finalAttackType} size="small" sx={{ bgcolor: "#1E3A8A", color: "#93C5FD", fontWeight: 700 }} />
+                </Box>
+              )}
+
+              {resolution.finalSeverity && (
+                <Box mb={2}>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>FINAL CONFIRMED SEVERITY</Typography>
+                  <Chip label={resolution.finalSeverity} size="small" color={severityColor(resolution.finalSeverity)} sx={{ fontWeight: 700 }} />
+                </Box>
+              )}
+
+              {resolution.resolutionSummary && (
+                <Box mb={2.5}>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>RESOLUTION SUMMARY</Typography>
+                  <Typography sx={{ color: "#FFFFFF", lineHeight: 1.7, fontSize: 14 }}>
+                    {resolution.resolutionSummary}
+                  </Typography>
+                </Box>
+              )}
+
+              {Array.isArray(resolution.resolutionSteps) && resolution.resolutionSteps.length > 0 && (
+                <Box mb={2.5}>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 1 }}>REMEDIATION STEPS TAKEN</Typography>
+                  {resolution.resolutionSteps.map((step, idx) => (
+                    <Box key={idx} display="flex" gap={1.5} mb={1}>
+                      <Box sx={{ minWidth: 22, height: 22, borderRadius: "50%", bgcolor: "#16A34A", color: "#FFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>
+                        {idx + 1}
+                      </Box>
+                      <Typography sx={{ color: "#E5E7EB", fontSize: 14, alignSelf: "center" }}>
+                        {step}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
+              {resolution.rootCause && (
+                <Box mb={2.5}>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>IDENTIFIED ROOT CAUSE</Typography>
+                  <Typography sx={{ color: "#D1D5DB", fontSize: 14, lineHeight: 1.6 }}>
+                    {resolution.rootCause}
+                  </Typography>
+                </Box>
+              )}
+
+              {resolution.lessonsLearned && (
+                <Box mb={2.5}>
+                  <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.5 }}>PREVENTIVE ADVICE & LESSONS LEARNED</Typography>
+                  <Typography sx={{ color: "#D1D5DB", fontSize: 14, lineHeight: 1.6 }}>
+                    {resolution.lessonsLearned}
+                  </Typography>
+                </Box>
+              )}
+
+              <Box display="flex" justifyContent="space-between" alignItems="center" pt={1.5} borderTop="1px solid #444">
+                <Typography sx={{ color: "#9CA3AF", fontSize: 12 }}>
+                  Resolved by {resolution.resolvedByName || "Security Analyst"} on {resolution.resolvedAt ? new Date(resolution.resolvedAt).toLocaleString() : "Recently"}
+                </Typography>
+
+                {resolution.kbArticleId && (
+                  <Chip
+                    icon={<MenuBookIcon sx={{ "&&": { color: "#60A5FA" } }} />}
+                    label="Knowledge Article Published"
+                    size="small"
+                    sx={{ bgcolor: "#1E3A8A", color: "#60A5FA", fontWeight: 600 }}
+                  />
+                )}
+              </Box>
+            </Paper>
+          )}
         </Grid>
 
-        {/* RIGHT */}
+        {/* RIGHT COLUMN */}
         <Grid size={{ xs: 12, md: 5 }}>
-
           {/* AI Summary */}
           <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2, mb: 3 }}>
             <Typography variant="h6" fontWeight={700} mb={3} sx={{ color: "#FFFFFF" }}>
               AI Analysis Summary
             </Typography>
 
-            <Label title="CATEGORY" />
+            <Label title="AI CLASSIFIED ATTACK TYPE" />
             <Paper sx={{ bgcolor: "#1E1E1E", p: 1.5, mb: 3 }}>
               <Typography sx={{ color: "#FFFFFF" }}>
                 {analysis.attackType ?? analysis.category ?? "Not analyzed yet"}
               </Typography>
             </Paper>
 
-            <Label title="SEVERITY" />
-            <Paper sx={{ bgcolor: "#401E1E", p: 1.5, mb: 3 }}>
+            <Label title="RULE-DERIVED AI SEVERITY" />
+            <Paper sx={{ bgcolor: "#1E1E1E", p: 1.5, mb: 3 }}>
               <Typography sx={{ color: "#FFFFFF" }}>
-                {analysis.severity ?? data.severity ?? "—"}
+                {analysis.aiSeverity ?? analysis.severity ?? data.severity ?? "—"}
               </Typography>
             </Paper>
 
-            <Label title="PLAYBOOK" />
+            <Label title="RECOMMENDED PLAYBOOK" />
             <Box
               display="flex"
               alignItems="center"
@@ -158,17 +297,20 @@ function IncidentDetailsContent() {
               sx={{
                 cursor: playbookTitle !== "No playbook assigned" ? "pointer" : "default",
                 borderRadius: 1,
-                p: 0.5,
+                p: 1.5,
+                bgcolor: "#1E1E1E",
+                border: "1px solid #444",
                 "&:hover": playbookTitle !== "No playbook assigned"
-                  ? { bgcolor: "rgba(66,165,245,0.08)" }
+                  ? { borderColor: "#60A5FA", bgcolor: "#252525" }
                   : {},
-                transition: "background 0.2s",
+                transition: "all 0.2s",
               }}
               onClick={() => handlePlaybookClick(playbookTitle)}
             >
               <ArticleOutlinedIcon sx={{ color: "#42A5F5" }} />
               <Typography sx={{
                 color: "#42A5F5",
+                fontWeight: 600,
                 textDecoration: playbookTitle !== "No playbook assigned" ? "underline" : "none",
                 textDecorationColor: "rgba(66,165,245,0.4)",
               }}>
@@ -180,11 +322,11 @@ function IncidentDetailsContent() {
           {/* Timeline */}
           <Paper elevation={0} sx={{ bgcolor: "#2B2B2B", p: 3, borderRadius: 2 }}>
             <Typography variant="h6" fontWeight={700} mb={3} sx={{ color: "#FFFFFF" }}>
-              Timeline
+              Incident Timeline
             </Typography>
 
             {timeline.length === 0 ? (
-              <Typography sx={{ color: "#9CA3AF" }}>No timeline events yet.</Typography>
+              <Typography sx={{ color: "#9CA3AF" }}>No timeline events recorded yet.</Typography>
             ) : (
               timeline.map((event, idx) => (
                 <Box key={event.id ?? idx}>
@@ -193,7 +335,7 @@ function IncidentDetailsContent() {
                     event.createdAt ? new Date(event.createdAt).toLocaleString() : "",
                     idx === 0 ? "#22C55E" : "#3B82F6"
                   )}
-                  {idx < timeline.length - 1 && <Divider sx={{ my: 2 }} />}
+                  {idx < timeline.length - 1 && <Divider sx={{ my: 2, borderColor: "#444" }} />}
                 </Box>
               ))
             )}
@@ -205,36 +347,38 @@ function IncidentDetailsContent() {
       <Dialog
         open={playbookDialog.open}
         onClose={closePlaybookDialog}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
             bgcolor: "#1F1F1F",
             color: "#FFFFFF",
-            backgroundImage: "none",
+            borderRadius: 2,
           }
         }}
       >
         <DialogTitle
           sx={{
             display: "flex", justifyContent: "space-between", alignItems: "center",
-            bgcolor: "#1F1F1F",
             borderBottom: "1px solid #333",
             px: 3, py: 2,
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#FFFFFF" }}>
-            {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title ?? "Playbook Details"}
-          </Typography>
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <ArticleOutlinedIcon sx={{ color: "#60A5FA" }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "#FFFFFF" }}>
+              {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title ?? "Playbook Details"}
+            </Typography>
+          </Box>
           <IconButton onClick={closePlaybookDialog}>
             <CloseIcon sx={{ color: "#9CA3AF" }} />
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ bgcolor: "#1F1F1F", px: 3, py: 2.5 }}>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
           {playbookDialog.loading ? (
             <Box display="flex" justifyContent="center" py={3}>
-              <CircularProgress size={28} />
+              <CircularProgress size={28} sx={{ color: "#60A5FA" }} />
             </Box>
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -244,7 +388,7 @@ function IncidentDetailsContent() {
                   <Chip
                     label={playbookDialog.playbook.category}
                     size="small"
-                    sx={{ bgcolor: "#2563EB", color: "#FFF" }}
+                    sx={{ bgcolor: "#2563EB", color: "#FFF", fontWeight: 600 }}
                   />
                 </Box>
               )}
@@ -259,35 +403,27 @@ function IncidentDetailsContent() {
               )}
 
               <Box>
-                <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 1 }}>CONTAINMENT STEPS</Typography>
+                <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 1 }}>MITIGATION STEPS</Typography>
                 {Array.isArray(playbookDialog.playbook?.steps) && playbookDialog.playbook.steps.length > 0 ? (
                   playbookDialog.playbook.steps.map((step, idx) => (
-                    <Box key={idx} display="flex" gap={1.5} mb={1}>
-                      <Typography sx={{ color: "#42A5F5", fontWeight: 700, minWidth: 20 }}>{idx + 1}.</Typography>
-                      <Typography sx={{ color: "#FFFFFF", lineHeight: 1.5 }}>
+                    <Box key={idx} display="flex" gap={1.5} mb={1.5} p={1.5} bgcolor="#2B2B2B" borderRadius={1.5}>
+                      <Chip label={idx + 1} size="small" sx={{ bgcolor: "#3B82F6", color: "#FFFFFF", fontWeight: 700, minWidth: 24 }} />
+                      <Typography sx={{ color: "#FFFFFF", lineHeight: 1.5, alignSelf: "center", fontSize: 14 }}>
                         {typeof step === "string" ? step : step.name ?? step.title ?? JSON.stringify(step)}
                       </Typography>
                     </Box>
                   ))
                 ) : (
                   <Typography sx={{ color: "#9CA3AF" }}>
-                    {playbookDialog.playbook?.name ?? playbookDialog.playbook?.title
-                      ? "Playbook found but no steps defined."
-                      : "Playbook details not available."}
+                    Standard response procedure steps.
                   </Typography>
                 )}
               </Box>
-
-              {playbookDialog.playbook?.updatedAt && (
-                <Typography sx={{ color: "#9CA3AF", fontSize: 12 }}>
-                  Last updated: {new Date(playbookDialog.playbook.updatedAt).toLocaleDateString()}
-                </Typography>
-              )}
             </Box>
           )}
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: "#1F1F1F", borderTop: "1px solid #333" }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: "1px solid #333" }}>
           <Button
             variant="outlined"
             onClick={closePlaybookDialog}
@@ -303,8 +439,8 @@ function IncidentDetailsContent() {
 
 function Info({ title, value, color = "#FFFFFF" }) {
   return (
-    <Box mb={3}>
-      <Typography sx={{ color: "#808080", fontSize: 13, mb: 0.5 }}>{title}</Typography>
+    <Box mb={2.5}>
+      <Typography sx={{ color: "#9CA3AF", fontSize: 13, mb: 0.3 }}>{title}</Typography>
       <Typography sx={{ color, fontWeight: 600 }}>{value}</Typography>
     </Box>
   );
@@ -312,7 +448,7 @@ function Info({ title, value, color = "#FFFFFF" }) {
 
 function Label({ title }) {
   return (
-    <Typography sx={{ color: "#808080", fontSize: 12, fontWeight: 700, mb: 1 }}>
+    <Typography sx={{ color: "#9CA3AF", fontSize: 12, fontWeight: 700, mb: 0.8 }}>
       {title}
     </Typography>
   );
@@ -324,7 +460,7 @@ function TimelineItem(title, time, color) {
       <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: color, mt: 0.7 }} />
       <Box>
         <Typography sx={{ color: "#FFFFFF" }} fontWeight={600}>{title}</Typography>
-        <Typography sx={{ color: "#808080" }} fontSize={13}>{time}</Typography>
+        <Typography sx={{ color: "#9CA3AF" }} fontSize={13}>{time}</Typography>
       </Box>
     </Box>
   );

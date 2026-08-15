@@ -56,10 +56,14 @@ public class Incident {
     @Column(name = "AI_STATUS")
     private String aiStatus;
 
+    @Column(name = "KB_ARTICLE_ID")
+    private String kbArticleId;
+
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
+
 
 }

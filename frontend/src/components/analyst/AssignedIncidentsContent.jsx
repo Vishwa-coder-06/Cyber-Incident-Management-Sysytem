@@ -80,9 +80,14 @@ function AssignedIncidentsContent() {
     "& .MuiSvgIcon-root": { color: "#FFFFFF" },
   };
 
-  const openIncident = (incident) => {
+  const openIncidentDetails = (incident) => {
     const id = incident.incidentId ?? incident.id;
-    navigate("/analyst/investigation", { state: { incidentId: id, incidentTitle: incident.title } });
+    navigate(`/analyst/incident-details/${id}`, { state: { incidentId: id, incidentTitle: incident.title } });
+  };
+
+  const openInvestigation = (incident) => {
+    const id = incident.incidentId ?? incident.id;
+    navigate(`/analyst/investigation/${id}`, { state: { incidentId: id, incidentTitle: incident.title } });
   };
 
   return (
@@ -137,18 +142,19 @@ function AssignedIncidentsContent() {
 
             <TableBody>
               {incidents.map((incident) => {
+                const id = incident.incidentId ?? incident.id;
                 const statusStr = (incident.status || "ASSIGNED").toUpperCase();
                 const isResolved = ["RESOLVED", "CLOSED", "READY_TO_CLOSE"].includes(statusStr);
 
                 return (
                   <TableRow
-                    key={incident.incidentId ?? incident.id}
+                    key={id}
                     hover
                     sx={{ cursor: "pointer", "&:hover": { bgcolor: "#333333" } }}
-                    onClick={() => openIncident(incident)}
+                    onClick={() => openIncidentDetails(incident)}
                   >
                     <TableCell sx={{ color: "#9CA3AF" }}>
-                      #INC-{incident.incidentId ?? incident.id}
+                      #INC-{id}
                     </TableCell>
                     <TableCell sx={{ color: "#FFFFFF", fontWeight: 600 }}>
                       {incident.title}
@@ -165,7 +171,7 @@ function AssignedIncidentsContent() {
                       <Box display="flex" gap={1}>
                         <Button
                           size="small" variant="outlined"
-                          onClick={() => openIncident(incident)}
+                          onClick={() => openInvestigation(incident)}
                           sx={{ color: "#FFFFFF", borderColor: "#555", textTransform: "none",
                             "&:hover": { borderColor: "#6750F5" } }}
                         >
@@ -174,8 +180,8 @@ function AssignedIncidentsContent() {
                         {!isResolved && (
                           <Button
                             size="small" variant="outlined"
-                            onClick={() => navigate("/analyst/resolution", {
-                              state: { incidentId: incident.incidentId ?? incident.id, incidentTitle: incident.title }
+                            onClick={() => navigate(`/analyst/resolution/${id}`, {
+                              state: { incidentId: id, incidentTitle: incident.title }
                             })}
                             sx={{ color: "#4ADE80", borderColor: "#4ADE80", textTransform: "none",
                               "&:hover": { borderColor: "#22C55E" } }}
@@ -195,5 +201,6 @@ function AssignedIncidentsContent() {
     </>
   );
 }
+
 
 export default AssignedIncidentsContent;

@@ -12,7 +12,11 @@ import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.secureops.common.dto.IncidentSummary;
 import com.secureops.common.dto.UserResponse;
 import com.secureops.incidentservice.client.UserClient;
@@ -21,21 +25,34 @@ import com.secureops.incidentservice.dto.AnalystInvestigationResponse;
 import com.secureops.incidentservice.dto.IncidentAnalysisResponse;
 import com.secureops.incidentservice.dto.IncidentDashboardResponse;
 import com.secureops.incidentservice.dto.IncidentRequest;
+import com.secureops.incidentservice.dto.IncidentResolutionResponse;
 import com.secureops.incidentservice.dto.IncidentResponse;
+import com.secureops.incidentservice.dto.KBConversionResponse;
 import com.secureops.incidentservice.dto.IncidentTimelineResponse;
+
 import com.secureops.incidentservice.dto.IncidentTrendResponse;
 import com.secureops.incidentservice.dto.ReporterDashboardResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentDetailResponse;
 import com.secureops.incidentservice.dto.ReporterIncidentRequest;
 import com.secureops.incidentservice.dto.ReporterIncidentResponse;
+import com.secureops.incidentservice.dto.ResolveIncidentRequest;
 import com.secureops.incidentservice.dto.SystemReport;
 import com.secureops.incidentservice.entity.Incident;
 import com.secureops.incidentservice.entity.IncidentAnalysis;
+import com.secureops.incidentservice.entity.IncidentResolution;
 import com.secureops.incidentservice.entity.IncidentTimelineEvent;
 import com.secureops.incidentservice.repository.IncidentAnalysisRepository;
 import com.secureops.incidentservice.repository.IncidentRepository;
+import com.secureops.incidentservice.repository.IncidentResolutionRepository;
 import com.secureops.incidentservice.repository.IncidentTimelineRepository;
+import org.springframework.beans.factory.annotation.Value;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.client.RestClient;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class IncidentService {
 
@@ -44,17 +61,39 @@ public class IncidentService {
     private final IncidentAnalysisRepository incidentAnalysisRepository;
     private final IncidentTimelineRepository incidentTimelineRepository;
     private final IncidentTimelineRepository incidentTimelineEventRepository;
+    private final AIAnalysisService aiAnalysisService;
+    private final IncidentResolutionRepository incidentResolutionRepository;
+    private final ObjectMapper objectMapper;
+    private final RestClient knowledgeRestClient;
+    private final com.secureops.incidentservice.client.AuditServiceClient auditServiceClient;
 
-    public IncidentService(IncidentRepository incidentRepository, UserClient userClient,
-    		IncidentAnalysisRepository incidentAnalysisRepository,IncidentTimelineRepository incidentTimelineRepository,
-    		IncidentTimelineRepository incidentTimelineEventRepository) {
+    public IncidentService(
+            IncidentRepository incidentRepository,
+            UserClient userClient,
+            IncidentAnalysisRepository incidentAnalysisRepository,
+            IncidentTimelineRepository incidentTimelineRepository,
+            IncidentTimelineRepository incidentTimelineEventRepository,
+            AIAnalysisService aiAnalysisService,
+            IncidentResolutionRepository incidentResolutionRepository,
+            ObjectMapper objectMapper,
+            com.secureops.incidentservice.client.AuditServiceClient auditServiceClient,
+            @Value("${knowledge.service.url:http://localhost:8085}") String knowledgeServiceUrl) {
         this.incidentRepository = incidentRepository;
         this.userClient = userClient;
         this.incidentAnalysisRepository = incidentAnalysisRepository;
         this.incidentTimelineRepository = incidentTimelineRepository;
         this.incidentTimelineEventRepository = incidentTimelineEventRepository;
-
+        this.aiAnalysisService = aiAnalysisService;
+        this.incidentResolutionRepository = incidentResolutionRepository;
+        this.objectMapper = objectMapper;
+        this.auditServiceClient = auditServiceClient;
+        this.knowledgeRestClient = RestClient.builder()
+                .baseUrl(knowledgeServiceUrl)
+                .build();
     }
+
+
+
 
     // Create Incident
 
@@ -144,9 +183,13 @@ public class IncidentService {
 
     		incident.setUpdatedAt(LocalDateTime.now());
 
-    		return incidentRepository.save(incident);
+    		Incident saved = incidentRepository.save(incident);
+    		auditServiceClient.logEvent(analystId, "INCIDENT_ASSIGNED",
+    		        "Incident #" + incidentId + " assigned to analyst #" + analystId, "INCIDENT");
+    		return saved;
 
      }
+
     
     public Incident updateIncidentStatus(Long id, String status) {
 
@@ -318,8 +361,15 @@ public class IncidentService {
 
         String email = authentication.getName();
 
-        UserResponse user =
-                userClient.getUserByEmail(email);
+        Long reporterId = 1L;
+        try {
+            UserResponse user = userClient.getUserByEmail(email);
+            if (user != null && user.getUserId() != null) {
+                reporterId = user.getUserId();
+            }
+        } catch (Exception e) {
+            log.warn("[INCIDENT] Could not retrieve user for email {}: {}", email, e.getMessage());
+        }
 
         Incident incident = new Incident();
 
@@ -329,7 +379,7 @@ public class IncidentService {
                 request.getIncidentDateTime());
         incident.setDescription(request.getDescription());
 
-        incident.setReportedBy(user.getUserId());
+        incident.setReportedBy(reporterId);
 
         incident.setStatus("DRAFT");
 
@@ -357,8 +407,15 @@ public class IncidentService {
 
         String email = authentication.getName();
 
-        UserResponse user =
-                userClient.getUserByEmail(email);
+        Long reporterId = 1L;
+        try {
+            UserResponse user = userClient.getUserByEmail(email);
+            if (user != null && user.getUserId() != null) {
+                reporterId = user.getUserId();
+            }
+        } catch (Exception e) {
+            log.warn("[INCIDENT] Could not retrieve user for email {}: {}", email, e.getMessage());
+        }
 
         Incident incident = new Incident();
 
@@ -372,10 +429,11 @@ public class IncidentService {
         incident.setDescription(
                 request.getDescription());
 
-        incident.setReportedBy(
-                user.getUserId());
+        incident.setReportedBy(reporterId);
 
         incident.setStatus("OPEN");
+        incident.setAiStatus("PENDING");
+
 
         incident.setCreatedAt(LocalDateTime.now());
         incident.setUpdatedAt(LocalDateTime.now());
@@ -383,122 +441,65 @@ public class IncidentService {
         Incident saved =
                 incidentRepository.save(incident);
 
-        //analyzeIncident(saved.getIncidentId());
+        auditServiceClient.logEvent(reporterId, "INCIDENT_SUBMITTED",
+                "Incident #" + saved.getIncidentId() + " submitted: " + saved.getTitle(), "INCIDENT");
+
+        // Capture Bearer token BEFORE async dispatch — the request context
+
+        // is unavailable in the background thread.
+        String authToken = null;
+        try {
+            ServletRequestAttributes attrs =
+                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                authToken = attrs.getRequest().getHeader("Authorization");
+            }
+        } catch (Exception ex) {
+            log.warn("[SUBMIT] Could not extract auth token for async AI trigger: {}",
+                    ex.getMessage());
+        }
+
+        // Trigger AI analysis asynchronously — reporter does NOT wait.
+        // AI result is saved to IncidentAnalysis table in background.
+        aiAnalysisService.triggerAsync(saved.getIncidentId(), authToken);
 
         return new IncidentResponse(
                 saved.getIncidentId(),
                 saved.getTitle(),
                 saved.getStatus(),
-                "Incident Submitted Successfully"
+                "Incident submitted. AI analysis is running in the background."
         );
     }
     
     public IncidentAnalysisResponse analyzeIncident(
             Long incidentId) {
 
-        Incident incident =
-                incidentRepository.findById(incidentId)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Incident Not Found"));
-
-        String text =
-                (incident.getTitle() + " "
-                        + incident.getDescription())
-                        .toLowerCase();
-
-        IncidentAnalysis analysis =
-                new IncidentAnalysis();
-
-        analysis.setIncidentId(incidentId);
-        analysis.setAnalyzedAt(LocalDateTime.now());
-
-        if (text.contains("sql")
-                || text.contains("injection")) {
-
-            analysis.setCategory(
-                    "Application Security");
-
-            analysis.setSeverity("CRITICAL");
-
-            analysis.setRootCause(
-                    "Malicious SQL input may have been "
-                    + "used to manipulate application queries.");
-
-            analysis.setImmediateAdvice(
-                    "Block the suspicious source, review "
-                    + "database logs and validate all inputs.");
-
-            analysis.setRecommendedPlaybookId("PB-001");
-
-            analysis.setRecommendedPlaybookTitle(
-                    "SQL Injection Response");
-
-        } else if (text.contains("phishing")
-                || text.contains("email")) {
-
-            analysis.setCategory("Email Security");
-
-            analysis.setSeverity("HIGH");
-
-            analysis.setRootCause(
-                    "Potential phishing activity detected "
-                    + "through suspicious email content.");
-
-            analysis.setImmediateAdvice(
-                    "Do not open suspicious links or "
-                    + "attachments. Report the sender.");
-
-            analysis.setRecommendedPlaybookId("PB-002");
-
-            analysis.setRecommendedPlaybookTitle(
-                    "Phishing Response");
-
-        } else {
-
-            analysis.setCategory("Security Incident");
-
-            analysis.setSeverity("MEDIUM");
-
-            analysis.setRootCause(
-                    "Potential security event requiring "
-                    + "further investigation.");
-
-            analysis.setImmediateAdvice(
-                    "Collect evidence and review relevant "
-                    + "system logs.");
-
-            analysis.setRecommendedPlaybookId("PB-003");
-
-            analysis.setRecommendedPlaybookTitle(
-                    "General Incident Response");
+        // Replaced keyword-matching with real AI service call.
+        // Capture Bearer token from current request.
+        String authToken = null;
+        try {
+            ServletRequestAttributes attrs =
+                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                authToken = attrs.getRequest().getHeader("Authorization");
+            }
+        } catch (Exception ex) {
+            log.warn("[ANALYZE] Could not extract auth token: {}", ex.getMessage());
         }
 
-        incident.setCategory(
-                analysis.getCategory());
+        // Synchronous call (analyst/admin manually triggered)
+        IncidentAnalysis saved = aiAnalysisService.runSync(incidentId, authToken);
 
-        incident.setSeverity(
-                analysis.getSeverity());
+        if (saved == null) {
+            throw new RuntimeException(
+                    "AI analysis failed for incident " + incidentId
+                    + ". Ensure ai-service and Python ML service are running.");
+        }
 
-        incident.setUpdatedAt(
-                LocalDateTime.now());
+        Incident incident = incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new RuntimeException("Incident Not Found"));
 
-        incidentRepository.save(incident);
-
-        IncidentAnalysis saved =
-                incidentAnalysisRepository.save(analysis);
-
-        return new IncidentAnalysisResponse(
-                incidentId,
-                incident.getTitle(),
-                saved.getCategory(),
-                saved.getSeverity(),
-                saved.getRootCause(),
-                saved.getImmediateAdvice(),
-                saved.getRecommendedPlaybookId(),
-                saved.getRecommendedPlaybookTitle(),
-                saved.getAnalyzedAt()
-        );
+        return buildAnalysisResponse(incident, saved);
     }
     
     public IncidentAnalysisResponse getAnalysis(
@@ -515,19 +516,45 @@ public class IncidentService {
                         .findByIncidentId(incidentId)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Analysis Not Found"));
+                                        "Analysis Not Found for incident " + incidentId
+                                        + ". aiStatus=" + incident.getAiStatus()));
 
-        return new IncidentAnalysisResponse(
-                incidentId,
-                incident.getTitle(),
-                analysis.getCategory(),
-                analysis.getSeverity(),
-                analysis.getRootCause(),
-                analysis.getImmediateAdvice(),
-                analysis.getRecommendedPlaybookId(),
-                analysis.getRecommendedPlaybookTitle(),
-                analysis.getAnalyzedAt()
-        );
+        return buildAnalysisResponse(incident, analysis);
+    }
+
+    /**
+     * Builds an enriched IncidentAnalysisResponse from an IncidentAnalysis record.
+     * Includes ML-predicted fields (attackType, confidence), rule-derived aiSeverity,
+     * and parsed similar incidents.
+     */
+    private IncidentAnalysisResponse buildAnalysisResponse(
+            Incident incident, IncidentAnalysis analysis) {
+
+        List<IncidentAnalysisResponse.SimilarIncidentInfo> similarIncidents =
+                aiAnalysisService.parseSimilarIncidents(
+                        analysis.getSimilarIncidentsJson());
+
+        IncidentAnalysisResponse response = new IncidentAnalysisResponse();
+        response.setIncidentId(incident.getIncidentId());
+        response.setTitle(incident.getTitle());
+
+        // Backward-compat fields
+        response.setCategory(analysis.getCategory());
+        response.setSeverity(analysis.getSeverity());
+        response.setRootCause(analysis.getRootCause());
+        response.setImmediateAdvice(analysis.getImmediateAdvice());
+        response.setRecommendedPlaybookId(analysis.getRecommendedPlaybookId());
+        response.setRecommendedPlaybookTitle(analysis.getRecommendedPlaybookTitle());
+        response.setAnalyzedAt(analysis.getAnalyzedAt());
+
+        // Enriched AI fields
+        response.setAttackType(analysis.getAttackType());
+        response.setConfidence(analysis.getConfidence());
+        response.setAiSeverity(analysis.getAiSeverity());
+        response.setIncidentSource(analysis.getIncidentSource());
+        response.setSimilarIncidents(similarIncidents);
+
+        return response;
     }
     
     public Incident submitToManager(Long id) {
@@ -607,19 +634,7 @@ public class IncidentService {
                         .orElse(null);
 
         if (analysis != null) {
-
-            analysisResponse =
-                    new IncidentAnalysisResponse(
-                            incident.getIncidentId(),
-                            incident.getTitle(),
-                            analysis.getCategory(),
-                            analysis.getSeverity(),
-                            analysis.getRootCause(),
-                            analysis.getImmediateAdvice(),
-                            analysis.getRecommendedPlaybookId(),
-                            analysis.getRecommendedPlaybookTitle(),
-                            analysis.getAnalyzedAt()
-                    );
+            analysisResponse = buildAnalysisResponse(incident, analysis);
         }
 
         // 5. Get timeline
@@ -709,7 +724,10 @@ public class IncidentService {
         event.setCreatedAt(
                 LocalDateTime.now());
 
-        return incidentTimelineEventRepository.save(event);
+        IncidentTimelineEvent savedEvent = incidentTimelineEventRepository.save(event);
+        auditServiceClient.logEvent(user != null ? user.getUserId() : 0L, "INVESTIGATION_NOTE_ADDED",
+                "Investigation note added to incident #" + incidentId + ": " + (note.length() > 50 ? note.substring(0, 47) + "..." : note), "INVESTIGATION");
+        return savedEvent;
     }
     
     public Incident performInvestigationAction(
@@ -737,6 +755,9 @@ public class IncidentService {
                 LocalDateTime.now());
 
         incidentTimelineEventRepository.save(event);
+        auditServiceClient.logEvent(0L, "INVESTIGATION_ACTION",
+                "Executed action '" + action + "' on incident #" + incidentId, "INVESTIGATION");
+
 
         if ("RESOLVE".equalsIgnoreCase(action)) {
 
@@ -853,6 +874,234 @@ public class IncidentService {
         incidentTimelineEventRepository.save(event);
 
         return incidentRepository.save(incident);
+    }
+
+    /**
+     * Dedicated structured resolution workflow.
+     * Persists:
+     *   - resolutionSummary
+     *   - ordered resolutionSteps
+     *   - rootCause
+     *   - finalAttackType (analyst confirmed ground truth)
+     *   - finalSeverity (analyst confirmed ground truth)
+     *   - lessonsLearned
+     *   - resolvedBy / resolvedByName / resolvedAt
+     * Updates Incident status to "RESOLVED" and applies the confirmed final severity and attack type.
+     */
+    public IncidentResolutionResponse resolveIncident(
+            Long incidentId,
+            ResolveIncidentRequest request,
+            String userEmail) {
+
+        Incident incident = incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new RuntimeException("Incident Not Found: " + incidentId));
+
+        UserResponse user = null;
+        if (userEmail != null && !userEmail.isBlank()) {
+            try {
+                user = userClient.getUserByEmail(userEmail);
+            } catch (Exception ex) {
+                log.warn("[RESOLVE] Could not fetch user details for {}: {}", userEmail, ex.getMessage());
+            }
+        }
+
+        Long userId = user != null ? user.getUserId() : null;
+        String userName = user != null
+                ? (user.getFirstName() + " " + user.getLastName())
+                : (userEmail != null ? userEmail : "Analyst");
+
+        // Serialize ordered resolution steps
+        String stepsJson = null;
+        if (request.getResolutionSteps() != null && !request.getResolutionSteps().isEmpty()) {
+            try {
+                stepsJson = objectMapper.writeValueAsString(request.getResolutionSteps());
+            } catch (Exception e) {
+                log.warn("[RESOLVE] Could not serialize resolution steps: {}", e.getMessage());
+            }
+        }
+
+        IncidentResolution resolution = incidentResolutionRepository
+                .findByIncidentId(incidentId)
+                .orElse(new IncidentResolution());
+
+        resolution.setIncidentId(incidentId);
+        resolution.setResolutionSummary(request.getResolutionSummary());
+        resolution.setResolutionStepsJson(stepsJson);
+        resolution.setRootCause(request.getRootCause());
+        resolution.setFinalAttackType(request.getFinalAttackType());
+        resolution.setFinalSeverity(request.getFinalSeverity());
+        resolution.setLessonsLearned(request.getLessonsLearned());
+        resolution.setResolvedBy(userId);
+        resolution.setResolvedByName(userName);
+        resolution.setResolvedAt(LocalDateTime.now());
+
+        IncidentResolution saved = incidentResolutionRepository.save(resolution);
+
+        // Update Incident status and apply ground truth final labels
+        incident.setStatus("RESOLVED");
+        if (request.getFinalSeverity() != null && !request.getFinalSeverity().isBlank()) {
+            incident.setSeverity(request.getFinalSeverity());
+        }
+        if (request.getFinalAttackType() != null && !request.getFinalAttackType().isBlank()) {
+            incident.setCategory(request.getFinalAttackType());
+        }
+        incident.setUpdatedAt(LocalDateTime.now());
+        incidentRepository.save(incident);
+
+        // Record resolution in activity timeline
+        IncidentTimelineEvent event = new IncidentTimelineEvent();
+        event.setIncidentId(incidentId);
+        event.setEvent("INCIDENT_RESOLVED");
+        event.setDescription("Incident resolved by " + userName + " (" + request.getFinalAttackType() + " / " + request.getFinalSeverity() + ")");
+        event.setCreatedAt(LocalDateTime.now());
+        incidentTimelineEventRepository.save(event);
+
+        auditServiceClient.logEvent(userId, "INCIDENT_RESOLVED",
+                "Incident #" + incidentId + " resolved by " + userName + ": " + request.getFinalAttackType() + " / " + request.getFinalSeverity(), "RESOLUTION");
+
+        return toResolutionResponse(incident, saved, request.getResolutionSteps());
+    }
+
+    public IncidentResolutionResponse getIncidentResolution(Long incidentId) {
+        Incident incident = incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new RuntimeException("Incident Not Found: " + incidentId));
+
+        IncidentResolution resolution = incidentResolutionRepository
+                .findByIncidentId(incidentId)
+                .orElseThrow(() -> new RuntimeException("Resolution record not found for incident " + incidentId));
+
+        List<String> steps = parseResolutionSteps(resolution.getResolutionStepsJson());
+        return toResolutionResponse(incident, resolution, steps);
+    }
+
+    public KBConversionResponse convertToKnowledgeArticle(Long incidentId, String authToken) {
+        Incident incident = incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new RuntimeException("Incident Not Found: " + incidentId));
+
+        if (incident.getKbArticleId() != null && !incident.getKbArticleId().isBlank()) {
+            return new KBConversionResponse(
+                    incidentId,
+                    incident.getKbArticleId(),
+                    "Resolution: " + incident.getTitle(),
+                    "Incident is already converted to Knowledge Base article ID " + incident.getKbArticleId()
+            );
+        }
+
+        IncidentResolution resolution = incidentResolutionRepository
+                .findByIncidentId(incidentId)
+                .orElseThrow(() -> new RuntimeException("Incident must be resolved before converting to KB article."));
+
+        List<String> steps = parseResolutionSteps(resolution.getResolutionStepsJson());
+        StringBuilder solutionText = new StringBuilder();
+        if (steps != null && !steps.isEmpty()) {
+            for (int i = 0; i < steps.size(); i++) {
+                solutionText.append(i + 1).append(". ").append(steps.get(i)).append("\n");
+            }
+        } else {
+            solutionText.append(resolution.getResolutionSummary() != null ? resolution.getResolutionSummary() : "Resolved.");
+        }
+
+        String articleTitle = "Resolution: " + incident.getTitle();
+        String description = "Incident Overview:\n" + (resolution.getResolutionSummary() != null ? resolution.getResolutionSummary() : "")
+                + "\n\nRoot Cause:\n" + (resolution.getRootCause() != null ? resolution.getRootCause() : "N/A");
+
+        Map<String, Object> kbPayload = new HashMap<>();
+        kbPayload.put("title", articleTitle);
+        kbPayload.put("category", resolution.getFinalAttackType() != null ? resolution.getFinalAttackType() : incident.getCategory());
+        kbPayload.put("severity", resolution.getFinalSeverity() != null ? resolution.getFinalSeverity() : incident.getSeverity());
+        kbPayload.put("description", description);
+        kbPayload.put("solution", solutionText.toString().trim());
+        kbPayload.put("prevention", resolution.getLessonsLearned() != null ? resolution.getLessonsLearned() : "Follow standard operating procedures.");
+        kbPayload.put("tags", List.of(
+                resolution.getFinalAttackType() != null ? resolution.getFinalAttackType() : "Security",
+                "Resolution",
+                "INC-" + incidentId
+        ));
+        kbPayload.put("createdBy", resolution.getResolvedByName() != null ? resolution.getResolvedByName() : "Security Analyst");
+        kbPayload.put("status", "PUBLISHED");
+
+        // Attach specific AI recommended playbook if present
+        incidentAnalysisRepository.findByIncidentId(incidentId).ifPresent(analysis -> {
+            if (analysis.getRecommendedPlaybookTitle() != null && !analysis.getRecommendedPlaybookTitle().isBlank()) {
+                kbPayload.put("playbookTitle", analysis.getRecommendedPlaybookTitle());
+            }
+        });
+
+        log.info("[KB-CONVERT] Sending KB article creation request for incident {}", incidentId);
+
+        try {
+            Map<?, ?> kbResponse = knowledgeRestClient.post()
+                    .uri("/api/articles")
+                    .header("Authorization", authToken != null ? authToken : "")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(kbPayload)
+                    .retrieve()
+                    .body(Map.class);
+
+            String articleId = null;
+            if (kbResponse != null) {
+                articleId = (String) kbResponse.get("id");
+                if (articleId == null && kbResponse.get("data") instanceof Map<?, ?> dataMap) {
+                    articleId = (String) dataMap.get("id");
+                }
+            }
+
+            if (articleId == null) {
+                articleId = "KB-" + incidentId + "-" + System.currentTimeMillis();
+            }
+
+            incident.setKbArticleId(articleId);
+            incident.setUpdatedAt(LocalDateTime.now());
+            incidentRepository.save(incident);
+
+            // Record timeline event
+            IncidentTimelineEvent event = new IncidentTimelineEvent();
+            event.setIncidentId(incidentId);
+            event.setEvent("KB_ARTICLE_GENERATED");
+            event.setDescription("Converted resolution into Knowledge Base article: " + articleTitle + " (ID: " + articleId + ")");
+            event.setCreatedAt(LocalDateTime.now());
+            incidentTimelineEventRepository.save(event);
+
+            auditServiceClient.logEvent(0L, "KB_CONVERTED",
+                    "Incident #" + incidentId + " converted to Knowledge Base article: " + articleTitle + " (ID: " + articleId + ")", "KNOWLEDGE_BASE");
+
+            log.info("[KB-CONVERT] Successfully created KB article {} for incident {}", articleId, incidentId);
+            return new KBConversionResponse(incidentId, articleId, articleTitle, "Knowledge Base article published successfully!");
+
+
+        } catch (Exception e) {
+            log.error("[KB-CONVERT] Failed to create KB article for incident {}: {}", incidentId, e.getMessage(), e);
+            throw new RuntimeException("Failed to publish KB article: " + e.getMessage(), e);
+        }
+    }
+
+    private IncidentResolutionResponse toResolutionResponse(Incident incident, IncidentResolution r, List<String> steps) {
+        return new IncidentResolutionResponse(
+                r.getResolutionId(),
+                r.getIncidentId(),
+                r.getResolutionSummary(),
+                steps,
+                r.getRootCause(),
+                r.getFinalAttackType(),
+                r.getFinalSeverity(),
+                r.getLessonsLearned(),
+                r.getResolvedBy(),
+                r.getResolvedByName(),
+                r.getResolvedAt(),
+                incident != null ? incident.getKbArticleId() : null
+        );
+    }
+
+    private List<String> parseResolutionSteps(String stepsJson) {
+        if (stepsJson == null || stepsJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(stepsJson, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            log.warn("[RESOLVE] Could not parse resolution steps JSON: {}", e.getMessage());
+            return List.of();
+        }
     }
     
     public List<Incident> getManagerIncidentQueue(
@@ -1033,14 +1282,19 @@ public class IncidentService {
 	            incidentRepository
 	                    .countByAffectedSystem()
 	                    .stream()
+	                    .filter(row -> row != null && row[0] != null &&
+	                            !String.valueOf(row[0]).trim().isEmpty() &&
+	                            !String.valueOf(row[0]).trim().equalsIgnoreCase("null") &&
+	                            !String.valueOf(row[0]).trim().equalsIgnoreCase("undefined"))
 	                    .map(row ->
 	                            new SystemReport(
 	                                    String.valueOf(
-	                                            row[0]),
+	                                            row[0]).trim(),
 	                                    ((Number) row[1])
 	                                            .longValue()
 	                            ))
 	                    .toList();
+
 
 
 	    // ==========================================
